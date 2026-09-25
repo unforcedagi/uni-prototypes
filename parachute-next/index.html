@@ -1,0 +1,1183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Parachute, next · Uni's memory layer (prototype)</title>
+<meta name="theme-color" content="#14110f">
+<style>
+:root{
+  --bg:#14110f;--bg2:#1a1613;--card:#1f1a17;--card2:#261f1b;--line:#342c27;--line2:#463b34;
+  --ink:#f3ece4;--mute:#a89b8f;--dim:#6f635a;--acc:#f0a35e;--acc2:#8fc7b1;--rose:#e58a8a;--sky:#8fb3e0;--lav:#b9a3e3;--gold:#e5c96f;
+  --r:14px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:radial-gradient(1200px 600px at 85% -10%,#3a2618 0,transparent 60%),var(--bg);color:var(--ink);font:15px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--acc)}
+kbd{font:600 11px ui-monospace,monospace;background:var(--card2);border:1px solid var(--line2);border-bottom-width:2px;border-radius:5px;padding:1px 5px;color:var(--mute)}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.serif{font-family:Georgia,"Iowan Old Style",serif}
+
+/* top bar */
+header{height:58px;display:flex;align-items:center;gap:18px;padding:0 18px;border-bottom:1px solid var(--line);background:rgba(20,17,15,.85);backdrop-filter:blur(8px);position:relative;z-index:5}
+.brand{display:flex;flex-direction:column;line-height:1.1;min-width:180px}
+.brand .l{font:600 11px ui-monospace,monospace;letter-spacing:.28em;color:var(--acc)}
+.brand .t{font:600 17px Georgia,serif}
+nav{display:flex;gap:4px;flex:1;overflow-x:auto}
+nav button{background:none;border:1px solid transparent;border-radius:10px;padding:7px 12px;color:var(--mute);white-space:nowrap;display:flex;gap:8px;align-items:center}
+nav button:hover{color:var(--ink);background:var(--card)}
+nav button.on{color:var(--ink);background:var(--card);border-color:var(--line2)}
+nav button .k{font:600 10px ui-monospace,monospace;color:var(--dim);border:1px solid var(--line2);border-radius:4px;padding:0 4px}
+.hbtn{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px 11px;color:var(--mute)}
+.hbtn:hover{color:var(--ink);border-color:var(--line2)}
+.who{display:flex;align-items:center;gap:8px;color:var(--mute);font-size:13px}
+.avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#f0a35e,#b86a3a);display:grid;place-items:center;color:#1a120c;font-weight:700;font-size:13px}
+
+main{position:absolute;top:58px;left:0;right:0;bottom:0}
+.view{position:absolute;inset:0;display:none}
+.view.on{display:block}
+.scroll{overflow:auto;height:100%}
+.wrap{max-width:1180px;margin:0 auto;padding:26px 22px 90px}
+h2.vt{font:600 28px/1.15 Georgia,serif;margin:0 0 4px}
+.lede{color:var(--mute);margin:0 0 20px;max-width:760px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r)}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:1px 8px;border-radius:99px;border:1px solid var(--line2);color:var(--mute);background:var(--bg2);white-space:nowrap}
+.pill.tag::before{content:"#";opacity:.6}
+.pill.lock{color:var(--rose);border-color:#5a3434}
+.pill.cls-capture{color:var(--acc);border-color:#5b4128}
+.pill.cls-ingest{color:var(--sky);border-color:#2e4058}
+.pill.cls-derived{color:var(--acc2);border-color:#2e4c42}
+.pill.cls-scaffolding{color:var(--lav);border-color:#43385a}
+.btn{background:var(--card2);border:1px solid var(--line2);border-radius:10px;padding:8px 14px;color:var(--ink)}
+.btn:hover{border-color:var(--acc)}
+.btn.pri{background:var(--acc);color:#1b120a;border-color:var(--acc);font-weight:600}
+.btn.pri:hover{filter:brightness(1.07)}
+.btn.ghost{background:none}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.sm{padding:4px 10px;font-size:13px;border-radius:8px}
+.muted{color:var(--mute)}.dim{color:var(--dim)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.wl{color:var(--acc);cursor:pointer;border-bottom:1px dotted rgba(240,163,94,.5)}
+.wl:hover{color:#ffc58e}
+.wl.broken{color:var(--dim);border-bottom-color:var(--dim)}
+
+/* MAP */
+#map svg{width:100%;height:100%;display:block;cursor:grab}
+#map svg.drag{cursor:grabbing}
+.terr{transition:opacity .3s}
+.terr text{font:600 11px ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;paint-order:stroke;stroke:#14110f;stroke-width:4px;stroke-linejoin:round}
+.edge{stroke:#6f635a;stroke-opacity:.18;stroke-width:1;transition:stroke-opacity .2s}
+.edge.hi{stroke:var(--acc);stroke-opacity:.8;stroke-width:1.6}
+.edge.typed{stroke-dasharray:3 3}
+.node{cursor:pointer;transition:opacity .35s}
+.node circle.b{stroke:#14110f;stroke-width:1.5;transition:r .2s}
+.node:hover circle.b{stroke:var(--ink)}
+.node text{font-size:11px;fill:#d9cdc0;pointer-events:none;opacity:0;transition:opacity .2s;paint-order:stroke;stroke:#14110f;stroke-width:3.5px;stroke-linejoin:round}
+.node.lbl text,.node:hover text{opacity:1}
+.node.fade{opacity:.13}
+.node.future{opacity:0;pointer-events:none}
+.node.new circle.b{animation:pulse 1.6s ease-out 3}
+@keyframes pulse{0%{stroke:var(--acc);stroke-width:10}100%{stroke-width:1.5}}
+.core-ring{fill:none;stroke:var(--acc);stroke-opacity:.35;stroke-dasharray:2 6;stroke-width:1.5}
+.core-label{font:600 10px ui-monospace,monospace;fill:var(--acc);letter-spacing:.2em;opacity:.8}
+.map-ov{position:absolute;z-index:3}
+.nowcard{top:16px;left:16px;width:290px;padding:14px 16px;max-height:calc(100% - 140px);overflow:auto}
+.nowcard h3{margin:0;font:600 18px Georgia,serif;display:flex;justify-content:space-between;align-items:center}
+.nowcard .sec{font:600 10px ui-monospace,monospace;letter-spacing:.2em;color:var(--dim);margin:12px 0 4px}
+.nowcard ul{margin:0;padding-left:18px}
+.nowcard li{margin:3px 0}
+.nowcard.min .body{display:none}
+.legend{top:16px;right:16px;padding:10px 12px;width:210px}
+.legend .it{display:flex;align-items:center;gap:8px;padding:3px 4px;border-radius:6px;cursor:pointer;font-size:13px;user-select:none}
+.legend .it:hover{background:var(--card2)}
+.legend .it.off{opacity:.35}
+.legend .sw{width:10px;height:10px;border-radius:50%}
+.legend .n{margin-left:auto;color:var(--dim);font-size:11px}
+.timeline{left:16px;right:16px;bottom:16px;padding:10px 16px;display:flex;align-items:center;gap:14px}
+.timeline input[type=range]{flex:1;accent-color:var(--acc)}
+.timeline .d{font:600 13px ui-monospace,monospace;min-width:108px}
+.spark{position:absolute;left:0;right:0;bottom:0;height:18px;pointer-events:none}
+.maphint{bottom:78px;left:50%;transform:translateX(-50%);font-size:12px;color:var(--dim);background:rgba(20,17,15,.7);padding:4px 10px;border-radius:99px}
+.tooltip{position:absolute;pointer-events:none;z-index:6;background:var(--card2);border:1px solid var(--line2);border-radius:10px;padding:8px 10px;font-size:12.5px;max-width:280px;display:none;box-shadow:0 8px 30px rgba(0,0,0,.4)}
+
+/* DRAWER */
+#drawer{position:fixed;top:58px;right:0;bottom:0;width:min(460px,100%);background:var(--bg2);border-left:1px solid var(--line);z-index:8;transform:translateX(105%);transition:transform .28s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;box-shadow:-20px 0 50px rgba(0,0,0,.35)}
+#drawer.on{transform:none}
+#drawer .dh{padding:16px 18px 12px;border-bottom:1px solid var(--line)}
+#drawer .path{font:12px ui-monospace,monospace;color:var(--dim);word-break:break-all}
+#drawer h3{margin:4px 0 8px;font:600 21px/1.2 Georgia,serif}
+#drawer .db{padding:16px 18px;overflow:auto;flex:1}
+.content{white-space:normal;line-height:1.62}
+.content p{margin:0 0 10px}
+.content h4{margin:14px 0 6px;font:600 12px ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+.content ul{margin:0 0 10px;padding-left:20px}
+.content .spk{color:var(--acc2);font-weight:600}
+.meta{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0}
+.meta td{padding:5px 0;border-top:1px solid var(--line);vertical-align:top}
+.meta td:first-child{color:var(--dim);width:110px;font-family:ui-monospace,monospace;font-size:12px}
+.sacred{display:flex;gap:10px;align-items:flex-start;background:rgba(240,163,94,.07);border:1px solid #5b4128;border-radius:10px;padding:9px 11px;font-size:13px;color:#e8c9a8;margin-bottom:12px}
+.linklist a{display:block;padding:5px 8px;border-radius:8px;text-decoration:none;color:var(--ink);font-size:13.5px}
+.linklist a:hover{background:var(--card)}
+.linklist .rel{font:11px ui-monospace,monospace;color:var(--dim);margin-right:6px}
+
+/* SEARCH */
+.sbar{display:flex;gap:10px;align-items:center;padding:8px 8px 8px 16px}
+.sbar input{flex:1;background:none;border:none;outline:none;font-size:18px;padding:8px 0}
+.toggle{display:flex;background:var(--bg2);border:1px solid var(--line2);border-radius:10px;padding:3px}
+.toggle button{background:none;border:none;padding:6px 12px;border-radius:7px;color:var(--mute);font-size:13.5px}
+.toggle button.on{background:var(--card2);color:var(--ink);box-shadow:0 0 0 1px var(--line2)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 18px}
+.chip{background:var(--card);border:1px solid var(--line);border-radius:99px;padding:5px 12px;font-size:13.5px;color:var(--mute)}
+.chip:hover{color:var(--ink);border-color:var(--acc)}
+.res{padding:14px 16px;margin:10px 0;display:grid;grid-template-columns:1fr 150px;gap:16px;animation:rise .35s ease both}
+@keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.res .top{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.res .ttl{font-weight:600;cursor:pointer}
+.res .ttl:hover{color:var(--acc)}
+.res .p{font:12px ui-monospace,monospace;color:var(--dim)}
+.chunk{margin:8px 0;padding:8px 12px;border-left:3px solid var(--acc);background:rgba(240,163,94,.06);border-radius:0 8px 8px 0;font-size:14.5px}
+.chunk mark{background:rgba(240,163,94,.28);color:var(--ink);border-radius:3px;padding:0 2px}
+.chunk mark.c{background:rgba(143,199,177,.22)}
+.why{margin:6px 0 0;padding:0;list-style:none;font-size:13.5px;color:var(--mute)}
+.why li{padding:2px 0 2px 22px;position:relative}
+.why li::before{content:attr(data-i);position:absolute;left:0;top:2px;font-size:12px}
+.score{text-align:right}
+.score .v{font:600 22px ui-monospace,monospace}
+.score .l{font-size:11px;color:var(--dim)}
+.bar{height:6px;background:var(--bg2);border-radius:99px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--acc2),var(--acc));border-radius:99px;transition:width .6s}
+.shimmer{height:92px;margin:10px 0;border-radius:var(--r);background:linear-gradient(90deg,var(--card) 0,var(--card2) 40%,var(--card) 80%);background-size:200% 100%;animation:sh 1.1s linear infinite;border:1px solid var(--line)}
+@keyframes sh{to{background-position:-200% 0}}
+.status{font:12px ui-monospace,monospace;color:var(--dim);min-height:18px}
+
+/* CAPTURE */
+.cgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:20px}
+.cap-in{padding:14px}
+.cgrid>div:first-child{position:sticky;top:0;align-self:start}
+.cap-in textarea{width:100%;min-height:150px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;resize:vertical;outline:none;font-size:16px;line-height:1.55}
+.cap-in textarea:focus{border-color:var(--line2)}
+.rec{display:inline-flex;gap:8px;align-items:center}
+.rec .dot{width:10px;height:10px;border-radius:50%;background:var(--rose)}
+.rec.on .dot{animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.2}}
+.wave{display:flex;gap:3px;align-items:center;height:26px}
+.wave i{width:3px;background:var(--rose);border-radius:2px;animation:wv .9s ease-in-out infinite}
+@keyframes wv{0%,100%{height:4px}50%{height:24px}}
+.frozen{padding:14px 16px;margin-top:16px;border-color:#5b4128;animation:rise .4s both}
+.frozen .txt{font:16px/1.6 Georgia,serif;margin:8px 0}
+.pipeline{font:12.5px ui-monospace,monospace;color:var(--mute);margin:0 0 12px;padding:0;list-style:none}
+.pipeline li{padding:3px 0;display:flex;gap:8px;align-items:center}
+.pipeline li.done::before{content:"✓";color:var(--acc2)}
+.pipeline li.run::before{content:"◌";color:var(--acc);animation:spin 1s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sug{padding:12px 14px;margin:9px 0;display:flex;gap:12px;animation:rise .35s both;outline:none}
+.sug:focus{border-color:var(--acc)}
+.sug .ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;flex:none;background:var(--card2);font-size:15px}
+.sug .main{flex:1;min-width:0}
+.sug .what{font-weight:600}
+.sug .rsn{font-size:13px;color:var(--mute);margin-top:2px}
+.sug .diff{font:12px ui-monospace,monospace;margin-top:6px;padding:6px 8px;background:var(--bg2);border-radius:7px;color:var(--acc2);white-space:pre-wrap;word-break:break-word}
+.sug .act{display:flex;flex-direction:column;gap:6px}
+.sug.acc{border-color:#2e4c42;background:rgba(143,199,177,.05)}
+.sug.rej{opacity:.4}
+.sug.acc .act,.sug.rej .act{display:none}
+.sug .res-l{font-size:12px;font-weight:600;margin-top:6px}
+.hashok{font:12px ui-monospace,monospace;color:var(--acc2);margin-top:10px}
+.empty{padding:30px;text-align:center;color:var(--dim);border:1px dashed var(--line2);border-radius:var(--r)}
+
+/* SHARING */
+.sgrid{display:grid;grid-template-columns:320px minmax(0,1fr);gap:20px}
+.collab{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:10px;cursor:pointer;border:1px solid transparent}
+.collab:hover{background:var(--card2)}
+.collab.on{background:var(--card2);border-color:var(--line2)}
+.collab .av{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:#1a120c;flex:none}
+.collab small{display:block;color:var(--dim);font-size:12px}
+.tagpick{display:flex;flex-wrap:wrap;gap:6px}
+.tagpick label{display:inline-flex;gap:6px;align-items:center;padding:4px 10px;border:1px solid var(--line2);border-radius:99px;font-size:13px;cursor:pointer;user-select:none;background:var(--bg2)}
+.tagpick label.on{border-color:var(--acc2);color:var(--acc2);background:rgba(143,199,177,.08)}
+.tagpick label.locked{border-style:dashed;color:var(--rose);cursor:not-allowed;opacity:.8}
+.tagpick input{display:none}
+.tagpick .c{color:var(--dim);font-size:11px}
+.vis-summary{font:600 20px Georgia,serif;margin:0 0 4px}
+.folder-g{margin:14px 0}
+.folder-g .fh{font:600 11px ui-monospace,monospace;letter-spacing:.16em;color:var(--dim);margin-bottom:6px;display:flex;gap:8px}
+.ngrid{display:flex;flex-wrap:wrap;gap:6px}
+.nchip{font-size:12.5px;padding:4px 9px;border-radius:8px;border:1px solid var(--line);background:var(--bg2);cursor:pointer;max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:all .25s}
+.nchip.vis{border-color:#2e4c42;color:var(--ink);background:rgba(143,199,177,.08)}
+.nchip.hid{opacity:.28}
+.nchip.held{color:var(--dim);border-style:dashed;border-color:#5a3434;background:repeating-linear-gradient(135deg,var(--bg2) 0 6px,#1d1614 6px 12px)}
+.nchip.held::before{content:"🔒 ";font-size:11px}
+.tok{padding:12px 14px;margin:10px 0;animation:rise .35s both}
+.tok code{display:block;word-break:break-all;font-size:12px;color:var(--acc2);background:var(--bg2);padding:8px 10px;border-radius:8px;margin:8px 0}
+.tok.revoked{opacity:.45}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{background:var(--bg2);border:1px solid var(--line2);border-radius:8px;padding:4px 10px;font-size:13px;color:var(--mute)}
+.seg button.on{border-color:var(--acc);color:var(--ink)}
+.warn{font-size:12.5px;color:var(--gold);margin-top:6px}
+.lbl{font:600 11px ui-monospace,monospace;letter-spacing:.16em;color:var(--dim);margin:16px 0 8px;text-transform:uppercase}
+
+/* modal / toast */
+.modal-bg{position:fixed;inset:0;background:rgba(10,8,7,.6);backdrop-filter:blur(3px);z-index:20;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-bg.on{display:flex}
+.modal{max-width:600px;width:100%;padding:24px 26px;max-height:88vh;overflow:auto}
+.modal h3{margin:0 0 10px;font:600 22px Georgia,serif}
+.modal table{width:100%;font-size:14px;border-collapse:collapse}
+.modal td{padding:6px 0;border-top:1px solid var(--line)}
+.modal .real{color:var(--acc2)}.modal .dream{color:var(--acc)}
+#toasts{position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:30;display:flex;flex-direction:column;gap:8px;align-items:center}
+.toast{background:var(--card2);border:1px solid var(--line2);border-radius:10px;padding:8px 14px;font-size:14px;animation:rise .25s both;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.synthetic{position:fixed;left:12px;bottom:10px;z-index:4;font-size:11.5px;color:var(--dim);background:rgba(20,17,15,.8);border:1px solid var(--line);border-radius:99px;padding:3px 10px;cursor:pointer}
+#map .synthetic{display:none}
+.hbtn .sm{display:none}
+.brand .l{white-space:nowrap}
+@media (max-width:700px){.hbtn .lg{display:none}.hbtn .sm{display:inline}.maphint,#tlCount{display:none}.nowcard{width:calc(100% - 32px)}.brand{display:none}.timeline{padding:8px 10px;gap:8px}header{gap:10px;padding:0 10px}}
+@media (max-width:900px){
+  .cgrid,.sgrid{grid-template-columns:1fr}
+  .res{grid-template-columns:1fr}.score{text-align:left}
+  .legend{display:none}.nowcard{width:230px}
+  .brand{min-width:0}.brand .t{font-size:14px}.who span{display:none}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="l">PARACHUTE · NEXT</span><span class="t">Uni's memory layer</span></div>
+  <nav id="tabs">
+    <button data-v="map" class="on"><span class="k">1</span>Vault map</button>
+    <button data-v="search"><span class="k">2</span>Meaning search</button>
+    <button data-v="capture"><span class="k">3</span>Capture → link</button>
+    <button data-v="share"><span class="k">4</span>Scoped sharing</button>
+  </nav>
+  <button class="hbtn" id="helpBtn" title="Keyboard shortcuts">?</button>
+  <button class="hbtn" id="aboutBtn"><span class="lg">About this prototype</span><span class="sm">About</span></button>
+  <div class="who"><div class="avatar">W</div><span>Wren's vault · <b class="mono" style="color:var(--ink)">uni</b></span></div>
+</header>
+
+<main>
+  <!-- MAP -->
+  <section class="view on" id="map">
+    <svg id="svg"><g id="vp"><g id="terrs"></g><g id="core"></g><g id="edges"></g><g id="nodes"></g></g></svg>
+    <div class="tooltip" id="tip"></div>
+    <div class="card map-ov nowcard" id="nowcard">
+      <h3>Now <button class="btn sm ghost" id="nowMin" title="Collapse">–</button></h3>
+      <div class="body" id="nowBody"></div>
+    </div>
+    <div class="card map-ov legend" id="legend"></div>
+    <div class="map-ov maphint">drag to pan · scroll to zoom · click a dot to open · <kbd>T</kbd> play timeline · <kbd>F</kbd> fit</div>
+    <div class="card map-ov timeline">
+      <button class="btn sm" id="play">▶ Play</button>
+      <span class="d" id="tlDate"></span>
+      <div style="flex:1;position:relative;display:flex;align-items:center">
+        <input type="range" id="tl" min="0" max="100" value="100">
+      </div>
+      <span class="muted mono" style="font-size:12px" id="tlCount"></span>
+    </div>
+  </section>
+
+  <!-- SEARCH -->
+  <section class="view" id="search"><div class="scroll"><div class="wrap">
+    <h2 class="vt">Ask by meaning, and see why it matched</h2>
+    <p class="lede">Keyword search finds your exact words. Meaning search finds what you <i>meant</i>, even when you phrased it differently at 2am in March. Every result says why it surfaced: the passage it matched, the score, and the reasons in plain language.</p>
+    <div class="card sbar">
+      <span class="dim">⌕</span>
+      <input id="q" placeholder="e.g. when did I feel stretched too thin?" autocomplete="off">
+      <div class="toggle" id="mode"><button data-m="meaning" class="on">Meaning</button><button data-m="keyword">Keyword</button></div>
+    </div>
+    <div class="chips" id="qchips"></div>
+    <div class="status" id="sstatus"></div>
+    <div id="results"></div>
+  </div></div></section>
+
+  <!-- CAPTURE -->
+  <section class="view" id="capture"><div class="scroll"><div class="wrap">
+    <h2 class="vt">A capture stays exactly as you said it</h2>
+    <p class="lede">Type or record a thought. It lands in <span class="mono">Notes/YYYY/MM-DD/HH-MM-SS</span> and is frozen: Uni never edits a capture. Instead Uni <i>proposes</i> links, tags, people and project updates around it. You accept or reject each one.</p>
+    <div class="cgrid">
+      <div>
+        <div class="card cap-in">
+          <textarea id="capText" placeholder="What's on your mind? Try naming a person, a project, or something you promised to do…"></textarea>
+          <div class="row" style="margin-top:10px;justify-content:space-between">
+            <div class="row">
+              <button class="btn rec" id="recBtn"><span class="dot"></span><span id="recLbl">Record</span></button>
+              <div class="wave" id="wave" style="display:none"></div>
+            </div>
+            <div class="row"><span class="dim" style="font-size:12px"><kbd>Ctrl</kbd>+<kbd>Enter</kbd></span><button class="btn pri" id="capSave">Save capture</button></div>
+          </div>
+          <div class="lbl">or start from</div>
+          <div class="chips" id="capChips" style="margin:0"></div>
+        </div>
+        <div id="frozen"></div>
+      </div>
+      <div>
+        <div class="row" style="justify-content:space-between;margin-bottom:6px">
+          <div class="lbl" style="margin:0">Uni's proposals</div>
+          <div class="row"><span class="dim" style="font-size:12px"><kbd>A</kbd> accept · <kbd>R</kbd> reject · <kbd>J</kbd>/<kbd>K</kbd> move</span><button class="btn sm" id="accAll" disabled>Accept all</button></div>
+        </div>
+        <ul class="pipeline" id="pipeline"></ul>
+        <div id="sugs"><div class="empty">Save a capture and Uni's suggestions appear here.<br><span style="font-size:13px">Nothing is applied until you say so.</span></div></div>
+      </div>
+    </div>
+  </div></div></section>
+
+  <!-- SHARE -->
+  <section class="view" id="share"><div class="scroll"><div class="wrap">
+    <h2 class="vt">Share a slice, never the core</h2>
+    <p class="lede">Grant someone (or another agent) a token scoped to tags. They see only notes carrying those tags. Captures, transcripts and anything <span class="mono">#private</span> sit behind a boundary no shared token can cross, even when they also carry a shared tag.</p>
+    <div class="sgrid">
+      <div>
+        <div class="card" style="padding:8px" id="collabs"></div>
+        <div class="card" style="padding:14px 16px;margin-top:14px">
+          <div class="lbl" style="margin-top:0">Mint a token</div>
+          <div class="muted" style="font-size:13px">Expires in</div>
+          <div class="seg" id="ttl" style="margin:6px 0 10px"></div>
+          <div class="muted" style="font-size:13px">Access</div>
+          <div class="seg" id="role" style="margin:6px 0 4px"></div>
+          <div id="ttlWarn"></div>
+          <button class="btn pri" id="mint" style="width:100%;margin-top:12px">Mint scoped token</button>
+          <div id="tokens"></div>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="padding:14px 16px">
+          <div class="lbl" style="margin-top:0">Tags they can see</div>
+          <div class="tagpick" id="tagpick"></div>
+          <div class="dim" style="font-size:12px;margin-top:10px">🔒 <span class="mono">capture</span>, <span class="mono">transcript</span>, <span class="mono">private</span> can't be granted. Parent tags include children (granting <span class="mono">life</span> grants <span class="mono">life/month</span>).</div>
+        </div>
+        <div class="card" style="padding:16px;margin-top:14px">
+          <p class="vis-summary" id="visSum"></p>
+          <div class="muted" id="visSub" style="font-size:14px"></div>
+          <div class="row" style="margin-top:10px;font-size:12px">
+            <span class="nchip vis" style="cursor:default">visible</span>
+            <span class="nchip held" style="cursor:default">held back by boundary</span>
+            <span class="nchip hid" style="cursor:default">not in scope</span>
+          </div>
+          <div id="visGrid"></div>
+        </div>
+      </div>
+    </div>
+  </div></div></section>
+</main>
+
+<aside id="drawer"><div class="dh" id="dh"></div><div class="db" id="db"></div></aside>
+
+<div class="modal-bg" id="about"><div class="card modal">
+  <h3>About this prototype</h3>
+  <p><b>Everything here is synthetic.</b> Wren Halloway, her bike co-op, her mom, her garden and all 90-odd notes are invented. No real vault was read to make this. State lives in your browser tab only and resets on reload.</p>
+  <p>It imagines <b>Parachute</b> as the memory layer of <b>Uni</b> (Hermes agent + Parachute memory + Buzz chat): one vault, "u·n·i = you and I".</p>
+  <table>
+    <tr><td class="real">Real today</td><td>Notes with path, content, tags, metadata, wikilinks and typed links; tag parents (<span class="mono">life/month</span> under <span class="mono">life</span>); write attribution (<span class="mono">created_via</span>: app / mcp / api / nostr:&lt;pubkey&gt;); full-text search weighted to titles; semantic search that chunks notes and ranks by best chunk; tag-scoped tokens with expiry.</td></tr>
+    <tr><td class="dream">Imagined</td><td>The unified folder layout; "why this matched" explanations; Uni proposing links around a frozen capture; a deny-wins privacy boundary for capture/transcript/private; this map and timeline.</td></tr>
+    <tr><td class="dim">Simulated</td><td>Embeddings and scores (a small concept lexicon standing in for bge-small), latency, voice transcription, and tokens (they're random strings and grant nothing).</td></tr>
+  </table>
+  <p class="muted" style="font-size:13px;margin-top:14px">Note classes: <span class="pill cls-capture">capture</span> sacred, never rewritten · <span class="pill cls-ingest">ingest</span> imported as-is · <span class="pill cls-derived">derived</span> Uni may rewrite · <span class="pill cls-scaffolding">scaffolding</span> structure (people, projects, views).</p>
+  <div style="text-align:right;margin-top:10px"><button class="btn" data-close>Close</button></div>
+</div></div>
+
+<div class="modal-bg" id="help"><div class="card modal" style="max-width:420px">
+  <h3>Keyboard</h3>
+  <table>
+    <tr><td><kbd>1</kbd>–<kbd>4</kbd></td><td>Switch views</td></tr>
+    <tr><td><kbd>/</kbd></td><td>Search</td></tr>
+    <tr><td><kbd>M</kbd></td><td>Toggle meaning / keyword (in search)</td></tr>
+    <tr><td><kbd>C</kbd></td><td>New capture</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Enter</kbd></td><td>Save capture</td></tr>
+    <tr><td><kbd>A</kbd> / <kbd>R</kbd> / <kbd>J</kbd> / <kbd>K</kbd></td><td>Accept / reject / move between proposals</td></tr>
+    <tr><td><kbd>T</kbd> / <kbd>F</kbd></td><td>Play the timeline / fit the map</td></tr>
+    <tr><td><kbd>N</kbd></td><td>Open the Now note</td></tr>
+    <tr><td><kbd>Esc</kbd></td><td>Close panel</td></tr>
+  </table>
+  <div style="text-align:right;margin-top:10px"><button class="btn" data-close>Close</button></div>
+</div></div>
+
+<div id="toasts"></div>
+
+<script>
+"use strict";
+/* =========================================================
+   DATA — all invented. Wren Halloway, Larkspur (a fictional river town).
+   ========================================================= */
+const TODAY = new Date("2026-09-24T09:30:00");
+const WREN_NPUB = "nostr:7c1e…a94f";
+const NOTES = [];
+function N(path, tags, when, via, content, extra){
+  NOTES.push(Object.assign({path, tags, created: new Date(when.replace(" ","T")), via, content, links: [], meta:{}}, extra||{}));
+}
+
+// ---- Now
+N("Now",["now"],"2026-09-24 06:00","mcp",
+`## Focus this week
+- Revised Chapter 3 to [[June Park]] by Friday
+- Sign order + volunteers for the repair café ([[Winter Fundraiser]])
+- Ask [[Lena Vos]] about grant reporting deadline
+- Call Mom
+
+## Season
+Autumn. [[The River Shelf]] is real now; [[The Slow Commons]] is slow on purpose. Cello resting until January.
+
+## Watching
+- [[Ines Marrow]] is carrying the co-op books alone
+- Garlic goes in next month ([[Alder St Garden]])`,{meta:{updated_by:"uni",refresh:"daily 06:00"}});
+
+// ---- People
+const P = (name, rel, body, extra) => N("People/"+name,["person"],"2026-03-06 10:00","mcp",body,Object.assign({meta:{relation:rel}},extra));
+P("Theo Ruiz","partner","Wren's partner. Teaches middle-school science, reads aloud at dinner, has opinions about squash.\n\n## Shared\n- [[Alder St Garden]]\n- Sunday long walks on [[Cedar Point Trail]]");
+P("Ines Marrow","co-founder","Co-founded [[Larkspur Bike Co-op]] with Wren in 2019. Treasurer. Precise, generous, stretched thin this year.\n\n## Threads\n- Owns the co-op books\n- On the board with [[Marcus Dell]] as landlord liaison");
+P("Sol Abara","mentor","Retired philosophy professor. Writes real letters. Told Wren to write the slow book slowly.\n\n## Recurring advice\n- \"The commons isn't a sprint either.\"\n- Read [[Governing the Commons]] twice, once for the argument, once for the stories.");
+P("June Park","editor","Editor at [[Fernwood Press]] for [[The Slow Commons]]. Short notes, sharp pencil. Favourite margin comment: \"less thesis, more porch.\"");
+P("Delia Halloway","mother","Wren's mom. Lives in [[Harrow Bay]]. Retired nurse, keeps Dad's old workshop exactly as it was (until August).");
+P("Kofi Mensah","volunteer","Carpenter who volunteers at the co-op. Building the shelving for [[The River Shelf]]. Paints signs before anyone votes.");
+P("Lena Vos","grants officer","Grants officer at [[City of Larkspur]] Parks. Suggested framing the tool library as \"shared infrastructure\".");
+P("Hana Ito","cello teacher","Wren's cello teacher. Wants the bow arm less polite. See [[Cello Year]].");
+P("Marcus Dell","landlord","Owns the building on Alder St that houses [[The Workshop]]. Fair, but the lease is up in June.");
+P("Rafi Halloway","nephew","Wren's nephew, 11. Fixed his first flat at the co-op in July. Wants to be a mechanic or a marine biologist.");
+
+// ---- Organizations
+N("Organizations/Larkspur Bike Co-op",["org","co-op"],"2026-03-06 10:05","mcp","Community bike shop in [[The Workshop]]. Pay-what-you-can repairs, volunteer nights Tue/Thu. Co-founded by Wren and [[Ines Marrow]].\n\n## Now\n- Hosting [[The River Shelf]] tool library\n- [[Winter Fundraiser]]: repair café night");
+N("Organizations/Fernwood Press",["org","book"],"2026-03-06 10:06","mcp","Small press publishing [[The Slow Commons]]. Editor: [[June Park]].");
+N("Organizations/City of Larkspur",["org","money"],"2026-03-06 10:07","mcp","Parks & community grants. Contact: [[Lena Vos]]. Awarded $18,000 for [[The River Shelf]] in August.");
+N("Organizations/Larkspur Public Library",["org"],"2026-03-06 10:08","mcp","Lends a seed library in spring. Possible partner for [[The River Shelf]] catalog software.");
+
+// ---- Places
+N("Places/The Workshop",["place","co-op"],"2026-03-06 10:10","mcp","Brick building on Alder St. Home of the [[Larkspur Bike Co-op]]. Landlord: [[Marcus Dell]]. Cold in winter, smells like chain lube and coffee.");
+N("Places/Cedar Point Trail",["place","health"],"2026-03-06 10:11","mcp","River trail west of town. Wren's running loop. Loud with snowmelt in May, gold in late September.");
+N("Places/Harrow Bay",["place","family"],"2026-03-06 10:12","mcp","Lake town where [[Delia Halloway]] lives. Six hours north. Dad's workshop was here.");
+N("Places/Café Mirabel",["place","book"],"2026-03-06 10:13","mcp","Corner café with a window seat. Where the book actually gets written.");
+
+// ---- Projects
+N("Projects/The River Shelf",["project","co-op"],"2026-03-12 09:00","mcp","A library of things by the river: ladders, tile saws, pressure washers. Nobody needs to own a tile saw.\n\n## People\n- Shelving: [[Kofi Mensah]]\n- Funding: [[Lena Vos]] at [[City of Larkspur]]\n\n## Log\n- Mar: idea\n- Jun: grant rewritten around \"shared infrastructure\"\n- Aug: $18,000 approved\n- Sep: named, sign painted",{meta:{status:"building",started:"2026-03-11"}});
+N("Projects/The Slow Commons",["project","book","writing"],"2026-03-12 09:05","mcp","Wren's book about repair, lending and belonging. With [[Fernwood Press]], edited by [[June Park]].\n\n## Log\n- Apr: [[Sol Abara]]'s letter\n- Jul: Chapter 3 stuck\n- Sep: 900 words at [[Café Mirabel]]",{meta:{status:"drafting",due:"2027-03-01"}});
+N("Projects/Winter Fundraiser",["project","co-op","money"],"2026-09-02 09:30","mcp","Repair café night at [[The Workshop]]. Bring broken things; fix them together; pay what you want.\n\n## Log\n- Sep 2: idea\n- Sep 16: planning meeting",{meta:{status:"planning",date:"2026-11-14"}});
+N("Projects/Alder St Garden",["project","garden"],"2026-04-20 18:30","mcp","Raised beds behind the house, planned with [[Theo Ruiz]]. Tomatoes on the fence, beans on the trellis, squash in the bad corner.\n\n## Log\n- Jul: heatwave, water at dawn\n- Sep: garlic planned for October",{meta:{status:"growing"}});
+N("Projects/Cello Year",["project","music"],"2026-03-19 21:30","mcp","A year of learning cello with [[Hana Ito]]. Paused August → January. Not quitting; resting the bow.",{meta:{status:"paused"}});
+
+// ---- Writing
+N("Writing/Repair as Care",["writing","book"],"2026-05-10 15:00","app","Essay draft. Fixing something together is a small act of belonging. The flat tire is the excuse; the conversation is the point. Draws on [[Governing the Commons]].");
+N("Writing/Borrowed Time — Chapter 3",["writing","book"],"2026-07-10 11:00","app","Chapter 3 draft. On lending libraries and the strange intimacy of borrowing a stranger's ladder. Currently too much thesis. Due to [[June Park]].");
+N("Writing/Newsletter — September",["writing","co-op"],"2026-09-20 16:00","app","Co-op newsletter. Announcing [[The River Shelf]], thanking [[Kofi Mensah]], teasing the repair café for the [[Winter Fundraiser]].");
+N("Writing/Talk — Lending Libraries for Everything",["writing"],"2026-06-28 10:00","app","Outline for a 10-minute talk at the library. Three stories: the tile saw, the canoe, the wedding tablecloths.");
+
+// ---- References
+N("References/Governing the Commons",["reference","book"],"2026-04-27 20:00","api","Elinor Ostrom. Reading notes. Commons don't have to be tragedies when the people using them make and enforce their own rules. Clear boundaries, local rules, cheap ways to resolve conflict.",{meta:{source:"book",imported_from:"Readwise"}});
+N("References/Tool libraries in 40 cities",["reference","co-op"],"2026-03-14 12:00","api","Article clipping. Most tool libraries die from volunteer burnout, not lack of money. Survivors pay one coordinator, even part-time.",{meta:{source:"web"}});
+N("References/On slowness (podcast)",["reference"],"2026-05-20 07:00","api","Podcast notes. Rest isn't the absence of work; it's what makes the work yours again.",{meta:{source:"podcast"}});
+N("References/The Art of Gathering",["reference"],"2026-08-30 21:00","api","Priya Parker. A gathering needs a purpose specific enough to exclude something. Applies to the repair café.",{meta:{source:"book",imported_from:"Readwise"}});
+
+// ---- Journal (imported)
+N("Journal/2026-03-02",["journal"],"2026-03-02 22:00","api","New notebook. Calling this the year of fewer things. Fewer projects, fewer screens, more hands in soil and grease.",{meta:{imported_from:"Day One"}});
+N("Journal/2026-03-15",["journal","co-op"],"2026-03-15 21:30","api","Co-op winter slump. Two volunteers tonight. Ines did the books at the counter with her coat on. We need heat or we need spring.",{meta:{imported_from:"Day One"}});
+N("Journal/2026-04-01",["journal","family"],"2026-04-01 20:15","api","Rain all day. Theo pranked me with a fake seed catalog. Mom sounded better on the phone.",{meta:{imported_from:"Day One"}});
+N("Journal/2026-04-27",["journal","book"],"2026-04-27 22:40","api","Finished Ostrom. The commons as a practice, not a place. That's the book, maybe.",{meta:{imported_from:"Day One"}});
+
+// ---- Meetings + transcripts
+function M(date, slug, title, people, summary, transcript, tags){
+  const d = date.slice(0,10).replace(/-/g,"/").replace(/\/(\d\d)\/(\d\d)$/,"/$1-$2");
+  const hhmm = date.slice(11,16).replace(":","");
+  const base = `Meetings/${d}/${hhmm}-${slug}`;
+  N(base,["meeting"].concat(tags||[]),date,"mcp",summary,{meta:{title, attendees:people.join(", ")}, typed: people.map(p=>({to:"People/"+p,rel:"attendee"}))});
+  N(base+" — transcript",["meeting","transcript"].concat(tags||[]),date,"api",transcript,{meta:{source:"recording", minutes: 20+Math.round(Math.random()*30)}, typed:[{to:base,rel:"transcript-of"}]});
+}
+M("2026-04-14 10:00","co-op-board","Co-op board",["Ines Marrow","Marcus Dell"],
+"## Decisions\n- Ask [[Marcus Dell]] for a two-year lease at the current rate\n- [[Ines Marrow]] to share the reserve numbers\n\n## Worries\nIf rent goes up in June the reserve lasts four months. The grant matters.",
+"Marcus: I'm not trying to push you out. Taxes went up.\nWren: We know. Could we lock two years?\nInes: The reserve covers about four months at a higher rate. I've run it three times.\nMarcus: Let me talk to my accountant.",["co-op","money"]);
+M("2026-06-03 14:30","grant-call-lena","Grant call with Lena",["Lena Vos"],
+"## Summary\n[[Lena Vos]] says the parks grant favours \"shared infrastructure\". Reframe [[The River Shelf]] around it. Deadline July 1.\n\n## Actions\n- Rewrite application (Wren)\n- Letters of support from [[Larkspur Public Library]]",
+"Lena: Committees love the phrase shared infrastructure. It sounds like roads.\nWren: A ladder is basically a road.\nLena: Say that in the application. Seriously.",["money","co-op"]);
+M("2026-07-22 11:00","june-editorial","Editorial call with June",["June Park"],
+"## Summary\nChapter 3 argues too hard. [[June Park]]: \"less thesis, more porch.\" Try opening with the borrowed ladder story.\n\n## Actions\n- Revised Chapter 3 by end of September",
+"June: Every paragraph is trying to win.\nWren: It's a book about the commons, it should persuade.\nJune: It should invite. Sit on the porch with me. Tell me about the ladder.",["book"]);
+M("2026-08-19 09:00","kofi-shelves","Shelving walkthrough with Kofi",["Kofi Mensah"],
+"## Summary\n[[Kofi Mensah]] will build 12 bays of shelving from donated plywood. Old co-op workbench becomes the checkout desk for [[The River Shelf]].",
+"Kofi: Twelve bays, one for each kind of tool.\nWren: And the workbench?\nKofi: Checkout desk. It's got forty years of grease in it. That's provenance.",["co-op"]);
+M("2026-09-16 16:00","fundraiser-planning","Repair café planning",["Ines Marrow","Kofi Mensah"],
+"## Decisions\n- Repair café night on Nov 14 at [[The Workshop]]\n- Pay what you want; soup by Theo\n\n## Actions\n- Sign order (Wren)\n- Volunteer rota ([[Ines Marrow]]) — Wren to offer help so Ines isn't alone with it",
+"Ines: I can do the rota. I always do the rota.\nWren: Let me take half.\nKofi: I'll make a sign.\nInes: You've already made a sign, haven't you.",["co-op","money"]);
+
+// ---- Captures (sacred, written by the Parachute app or from Buzz)
+function C(when, tags, text, via){
+  const [d,t] = when.split(" ");
+  const path = `Notes/${d.slice(0,4)}/${d.slice(5,7)}-${d.slice(8,10)}/${t.replace(/:/g,"-")}-00`;
+  N(path,["capture"].concat(tags),when,via||"app",text,{meta:{kind: tags.includes("voice")?"voice":"text"}});
+}
+C("2026-03-04 07:12",["voice","co-op","money"],"Couldn't sleep. Kept doing the math on the workshop rent again. If Marcus raises it in June we're done unless the grant comes through. Stop. Breathe. Ask Ines what the reserve actually is.");
+C("2026-03-11 18:40",["co-op"],"Idea: a library of things, but by the river. Ladders, pressure washers, a tile saw. Nobody in Larkspur needs to own a tile saw.");
+C("2026-03-19 21:05",["music"],"Hana says my bow arm is 'polite'. She wants it rude. Practice open strings like I mean it.");
+C("2026-03-28 08:30",["voice","family"],"Mom called. The tests came back fine but she sounded small on the phone. Book a trip to Harrow Bay before summer.");
+C("2026-04-06 12:15",["book"],"Sol's letter came: 'Write the slow book slowly. The commons isn't a sprint either.' Pinning this above the desk.");
+C("2026-04-20 17:50",["garden"],"Theo and I planned the beds. Tomatoes along the fence, beans up the trellis, the bad corner gets squash because squash forgives everything.");
+C("2026-05-02 06:55",["voice","health"],"First run on Cedar Point since the knee. Slow, stupid happy. The river was loud with snowmelt.");
+C("2026-05-14 22:10",["private","health"],"I'm tired in a way that sleep doesn't fix. Three projects is two too many. Something has to give before autumn.");
+C("2026-05-27 13:00",["co-op"],"Kofi can build the shelving for the tool library if we get the plywood donated. He wants the old co-op workbench as the checkout desk. Love it.", WREN_NPUB);
+C("2026-06-08 19:30",["co-op","money"],"Lena said the parks grant favours things that are 'shared infrastructure'. That's literally the tool library. Rewrite the application around that phrase.");
+C("2026-06-21 21:45",["voice","garden"],"Longest day. Ate dinner in the garden. Theo read aloud. The first tomato is green but it's there.");
+C("2026-07-03 10:20",["co-op","family"],"Rafi fixed his first flat at the co-op today, grease to the elbows, wouldn't stop grinning. This is the whole point.", WREN_NPUB);
+C("2026-07-15 16:05",["book"],"Chapter 3 is stuck. Every paragraph wants to be an argument. June's note: 'Less thesis, more porch.'");
+C("2026-07-29 07:40",["voice","garden"],"Heatwave. Beans are cooked. Water at dawn, not dusk, and mulch everything.");
+C("2026-08-06 20:00",["family"],"Harrow Bay. Mom and I sorted Dad's workshop. Kept his spoke wrench. Gave the rest to the co-op. Cried in the car, the good kind.");
+C("2026-08-12 09:15",["co-op","money"],"Grant approved!! $18,000 from the City for the tool library. Tell Kofi, tell Ines, buy plywood.");
+C("2026-08-24 14:30",["music"],"Decided: I'm pausing cello lessons until January. Not quitting. Resting the bow.");
+C("2026-09-02 08:05",["voice","co-op"],"Fundraiser idea: a repair café night. People bring broken things, we fix them together, pay what you want.");
+C("2026-09-09 22:30",["private","co-op"],"Worried about Ines. She's carrying the books alone and snapped at a volunteer. Check in, gently, not at a board meeting.");
+C("2026-09-14 11:00",["book","health"],"Leaves turning on the Cedar Point trail. Wrote 900 words at Café Mirabel after. Porch, not thesis.");
+C("2026-09-19 18:20",["garden"],"Theo wants to try garlic this winter. Plant in October, harvest July. A whole year's patience in one clove.");
+C("2026-09-22 07:30",["voice","book"],"Need to email June the revised chapter by Friday. Also ask Lena about the reporting deadline for the grant.");
+C("2026-09-23 21:10",["co-op"],"The tool library has a name now: The River Shelf. Kofi painted it on the sign before we'd even voted.", WREN_NPUB);
+C("2026-09-24 06:50",["voice","health"],"Woke up before the alarm, rested for once. Today: sign order for the repair café, call Mom.");
+
+// ---- Life (derived by Uni)
+N("Life/2026",["life/year"],"2026-09-01 06:00","mcp","The year of fewer things (from [[2026-03-02]]). So far: one grant won, one instrument rested, one father's workshop given away. Eras: [[The Workshop Years]].");
+N("Life/2026-06",["life/month"],"2026-07-01 06:00","mcp","June: grant rewritten after [[Lena Vos]]'s call; longest day in the garden with [[Theo Ruiz]]; Chapter 3 started.");
+N("Life/2026-07",["life/month"],"2026-08-01 06:00","mcp","July: [[Rafi Halloway]]'s first flat. Chapter 3 stuck, then [[June Park]]'s porch note. Heatwave in the garden.");
+N("Life/2026-08",["life/month"],"2026-09-01 06:05","mcp","August: [[Harrow Bay]] with Mom, Dad's workshop sorted. $18,000 grant for [[The River Shelf]]. Cello paused.");
+N("Life/The Workshop Years",["life/era"],"2026-03-20 06:00","mcp","2019 onward: co-founding the [[Larkspur Bike Co-op]] with [[Ines Marrow]] at [[The Workshop]]. The era Wren's identity is most tangled with.");
+N("Life/Thread — Rest vs. Momentum",["life/thread"],"2026-05-15 06:00","mcp","A recurring pull: momentum on projects vs. real rest. Surfaces in May (tired beyond sleep), August (cello paused), September (rested for once). See [[On slowness (podcast)]].");
+N("Life/Thread — Mom's health",["life/thread","family"],"2026-03-29 06:00","mcp","[[Delia Halloway]]'s tests in March (fine), the August visit to [[Harrow Bay]]. Keep calling.");
+
+// ---- Uni
+N("Uni/Commitments",["uni","commitment"],"2026-09-22 07:31","mcp","## Open\n- Send revised Chapter 3 to [[June Park]] — due Fri Sep 25\n- Ask [[Lena Vos]] about grant reporting deadline\n- Sign order for repair café\n- Offer [[Ines Marrow]] half the volunteer rota\n\n## Done this month\n- Tell Kofi + Ines about the grant ✓",{meta:{open:4}});
+N("Uni/Guides/How I like to be briefed",["uni","guide"],"2026-03-08 09:00","app","Mornings, short. Commitments first, then anything about Mom, then the co-op. Don't summarise my captures back to me; link them.");
+N("Uni/Runbooks/Weekly review",["uni","runbook"],"2026-03-08 09:10","mcp","Sundays. 1) Open loops in [[Uni/Commitments]]. 2) Captures without links. 3) Draft the month note. 4) Ask one question about rest.");
+N("Uni/Log/2026-09-23",["uni"],"2026-09-23 23:50","mcp","Linked 2 captures to [[The River Shelf]]. Refreshed [[Now]]. Proposed router change (pending). Declined to touch 1 capture: content is frozen.");
+N("Uni/Router proposals/Split co-op notes by year",["uni"],"2026-09-23 23:55","mcp","Proposal: co-op notes are 31% of the vault. Suggest a view rather than new folders. Status: waiting on Wren.",{meta:{status:"proposed"}});
+
+// ---- Views
+N("Views/Open loops",["view"],"2026-03-08 09:20","mcp","Query: captures with commitment language and no link to [[Uni/Commitments]]. Currently 2.",{meta:{query:"tag:capture AND NOT linked:Uni/Commitments"}});
+N("Views/Everything about the co-op",["view","co-op"],"2026-03-08 09:25","mcp","Query: tag co-op, newest first, grouped by month. Includes meetings but not transcripts.",{meta:{query:"tag:co-op -tag:transcript"}});
+
+// ---- Archive
+N("Archive/2025 garden plan",["garden"],"2026-03-01 12:00","api","Last year's plan. Lesson: the bad corner kills everything except squash.",{meta:{imported_from:"Apple Notes"}});
+
+/* ---------- derived structure ---------- */
+const TAG_PARENTS = {"life/month":"life","life/year":"life","life/era":"life","life/thread":"life"};
+const PRIVACY = new Set(["capture","transcript","private"]);
+const FOLDERS = [
+  {id:"Notes",label:"Captures",color:"#f0a35e"},
+  {id:"Meetings",label:"Meetings",color:"#8fb3e0"},
+  {id:"People",label:"People",color:"#e58a8a"},
+  {id:"Projects",label:"Projects",color:"#8fc7b1"},
+  {id:"Organizations",label:"Orgs",color:"#c9a27a"},
+  {id:"Places",label:"Places",color:"#9fc67f"},
+  {id:"Writing",label:"Writing",color:"#e5c96f"},
+  {id:"References",label:"References",color:"#a3b8c2"},
+  {id:"Journal",label:"Journal",color:"#d9a0c0"},
+  {id:"Life",label:"Life",color:"#b9a3e3"},
+  {id:"Uni",label:"Uni",color:"#7fd1d8"},
+  {id:"Views",label:"Views",color:"#8d8378"},
+  {id:"Now",label:"Now",color:"#ffd9a8"},
+  {id:"Archive",label:"Archive",color:"#6f635a"},
+];
+const FCOLOR = Object.fromEntries(FOLDERS.map(f=>[f.id,f.color]));
+let _id=0;
+const BYID = {}, BYPATH = {}, BYBASE = {};
+function titleOf(n){
+  if(n.path.startsWith("Notes/")){ const s=n.content.split(/(?<=[.!?])\s/)[0]; return s.length>58? s.slice(0,56)+"…" : s; }
+  if(n.path.startsWith("Meetings/")) return (n.meta.title||"")+(n.path.endsWith("transcript")?" — transcript":"");
+  return n.path.split("/").pop();
+}
+function classOf(n){
+  if(n.tags.includes("capture")) return "capture";
+  if(n.tags.includes("transcript")||n.path.startsWith("Journal/")||n.path.startsWith("References/")||n.path.startsWith("Archive/")) return "ingest";
+  if(/^(Life|Meetings|Uni)\//.test(n.path)) return "derived";
+  if(n.path.startsWith("Writing/")) return "derived";
+  return "scaffolding";
+}
+function folderOf(n){ return n.path.split("/")[0]; }
+function indexNote(n){
+  n.id = n.id || "n"+(++_id);
+  n.title = titleOf(n); n.cls = classOf(n); n.folder = folderOf(n);
+  BYID[n.id]=n; BYPATH[n.path.toLowerCase()]=n; BYBASE[n.path.split("/").pop().toLowerCase()]=n;
+}
+NOTES.forEach(indexNote);
+function resolve(t){ const k=t.toLowerCase(); return BYPATH[k]||BYBASE[k]||null; }
+function relink(n){
+  n.links = [];
+  const seen = new Set();
+  (n.content.match(/\[\[([^\]]+)\]\]/g)||[]).forEach(m=>{ const t=resolve(m.slice(2,-2)); if(t&&t!==n&&!seen.has(t.id)){seen.add(t.id);n.links.push({to:t.id,rel:"wikilink"});} });
+  (n.typed||[]).forEach(l=>{ const t=resolve(l.to); if(t&&!seen.has(t.id+l.rel)){seen.add(t.id+l.rel);n.links.push({to:t.id,rel:l.rel});} });
+  (n.extraLinks||[]).forEach(l=>n.links.push(l));
+}
+// captures: pre-accepted links (made in the past by accepting Uni's proposals) — stored as typed links, content untouched
+const PERSON_ALIASES = {
+  "Theo Ruiz":["theo","partner"],"Ines Marrow":["ines"],"Sol Abara":["sol","sol's"],"June Park":["june","june's"],
+  "Delia Halloway":["mom","mother","delia"],"Kofi Mensah":["kofi"],"Lena Vos":["lena"],"Hana Ito":["hana"],
+  "Marcus Dell":["marcus"],"Rafi Halloway":["rafi","nephew"]
+};
+const PLACE_KEYS = {"The Workshop":["workshop rent","the workshop"],"Cedar Point Trail":["cedar point"],"Harrow Bay":["harrow bay"],"Café Mirabel":["mirabel"]};
+const PROJECT_KEYS = {
+  "The River Shelf":["tool library","river shelf","library of things","plywood","shelving","shared infrastructure","grant"],
+  "The Slow Commons":["chapter","slow book","manuscript","words at","porch","book"],
+  "Winter Fundraiser":["fundraiser","repair café","repair cafe","pay what you want"],
+  "Alder St Garden":["garden","tomato","beans","garlic","beds","squash","mulch"],
+  "Cello Year":["cello","bow arm","bow","open strings"]
+};
+function detect(text){
+  const low = " "+text.toLowerCase().replace(/[^a-zà-ÿ'$0-9 ]/g," ")+" ";
+  const has = k => low.includes(" "+k+" ") || low.includes(" "+k+"'") || (k.includes(" ")&&low.includes(k));
+  const people = Object.keys(PERSON_ALIASES).filter(p=>PERSON_ALIASES[p].some(has));
+  const places = Object.keys(PLACE_KEYS).filter(p=>PLACE_KEYS[p].some(has));
+  const projects = Object.keys(PROJECT_KEYS).filter(p=>PROJECT_KEYS[p].some(has));
+  return {people,places,projects};
+}
+NOTES.forEach(n=>{
+  if(n.cls!=="capture") return;
+  const d = detect(n.content);
+  n.typed = [].concat(d.people.map(p=>({to:"People/"+p,rel:"mentions"})), d.places.map(p=>({to:"Places/"+p,rel:"at"})), d.projects.map(p=>({to:"Projects/"+p,rel:"about"})));
+});
+NOTES.forEach(relink);
+function backlinks(n){ const out=[]; NOTES.forEach(m=>m.links.forEach(l=>{ if(l.to===n.id) out.push({from:m.id,rel:l.rel}); })); return out; }
+function hash(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return ("0000000"+(h>>>0).toString(16)).slice(-8); }
+NOTES.forEach(n=>{ if(n.cls==="capture") n.sha = hash(n.content); });
+
+/* =========================================================
+   UTIL
+   ========================================================= */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const jitter = (a,b) => a + Math.random()*(b-a);
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const fmtDate = d => `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+const fmtDT = d => `${fmtDate(d)} · ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+const daysAgo = d => Math.round((TODAY - d)/864e5);
+function ago(d){ const n=daysAgo(d); if(n<=0) return "today"; if(n===1) return "yesterday"; if(n<45) return n+" days ago"; return Math.round(n/30)+" months ago"; }
+function toast(msg){ const t=document.createElement("div"); t.className="toast"; t.innerHTML=msg; $("#toasts").appendChild(t); setTimeout(()=>{t.style.transition="opacity .3s";t.style.opacity=0;setTimeout(()=>t.remove(),300)},2600); }
+function viaLabel(v){ return v==="app"?"app (Parachute)":v==="mcp"?"mcp (Uni agent)":v==="api"?"api (import)":v.startsWith("nostr:")?v+" (Buzz)":v; }
+function renderMD(s){
+  const lines = s.split("\n"); let html="", inList=false;
+  const inline = t => esc(t).replace(/\[\[([^\]]+)\]\]/g,(m,x)=>{ const n=resolve(x); return n?`<span class="wl" data-open="${n.id}">${esc(x.split("/").pop())}</span>`:`<span class="wl broken">${esc(x)}</span>`; })
+    .replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>").replace(/^([A-Z][a-z]+):\s/,'<span class="spk">$1:</span> ');
+  for(const l of lines){
+    if(l.startsWith("- ")){ if(!inList){html+="<ul>";inList=true;} html+="<li>"+inline(l.slice(2))+"</li>"; continue; }
+    if(inList){html+="</ul>";inList=false;}
+    if(l.startsWith("## ")) html+="<h4>"+esc(l.slice(3))+"</h4>";
+    else if(l.trim()) html+="<p>"+inline(l)+"</p>";
+  }
+  if(inList) html+="</ul>";
+  return html;
+}
+document.addEventListener("click",e=>{ const o=e.target.closest("[data-open]"); if(o){ e.preventDefault(); openNote(o.dataset.open); } });
+
+/* =========================================================
+   DRAWER
+   ========================================================= */
+let drawerId=null;
+function openNote(id){
+  const n = BYID[id]; if(!n) return; drawerId=id;
+  const tags = n.tags.map(t=>`<span class="pill tag ${PRIVACY.has(t)?"lock":""}">${esc(t)}</span>`).join(" ");
+  $("#dh").innerHTML = `<div class="row" style="justify-content:space-between"><span class="path">${esc(n.path)}</span><button class="btn sm ghost" onclick="closeDrawer()" title="Esc">✕</button></div>
+    <h3>${esc(n.title)}</h3><div class="row"><span class="pill cls-${n.cls}">${n.cls}</span>${tags}</div>`;
+  const out = n.links.map(l=>`<a href="#" data-open="${l.to}"><span class="rel">${esc(l.rel)} →</span>${esc(BYID[l.to].title)}</a>`).join("");
+  const bl = backlinks(n).map(l=>`<a href="#" data-open="${l.from}"><span class="rel">← ${esc(l.rel)}</span>${esc(BYID[l.from].title)}</a>`).join("");
+  const metaRows = Object.entries(n.meta).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("");
+  $("#db").innerHTML = `
+    ${n.cls==="capture"?`<div class="sacred"><span>🔒</span><div><b>Capture: sacred.</b> Uni links and tags around it but never edits these words. <span class="mono">sha ${n.sha}</span></div></div>`:""}
+    ${n.cls==="ingest"?`<div class="sacred" style="color:#b9cde8;border-color:#2e4058;background:rgba(143,179,224,.06)"><span>⇩</span><div><b>Ingested</b> as-is from an outside source. Kept verbatim.</div></div>`:""}
+    <div class="content">${renderMD(n.content)}</div>
+    <table class="meta">
+      <tr><td>created</td><td>${fmtDT(n.created)} <span class="dim">(${ago(n.created)})</span></td></tr>
+      <tr><td>created_via</td><td class="mono" style="font-size:12.5px">${esc(viaLabel(n.via))}</td></tr>
+      ${metaRows}
+    </table>
+    ${out?`<div class="lbl">Links out (${n.links.length})</div><div class="linklist">${out}</div>`:""}
+    ${bl?`<div class="lbl">Backlinks (${backlinks(n).length})</div><div class="linklist">${bl}</div>`:""}
+    <div class="row" style="margin-top:16px"><button class="btn sm" onclick="showOnMap('${n.id}')">Show on map</button><button class="btn sm" onclick="searchLike('${n.id}')">Find similar</button></div>`;
+  $("#drawer").classList.add("on");
+  highlightNode(id);
+}
+function closeDrawer(){ $("#drawer").classList.remove("on"); drawerId=null; highlightNode(null); }
+function showOnMap(id){ setView("map"); setTimeout(()=>{ focusNode(id); openNote(id); },50); }
+function searchLike(id){ const n=BYID[id]; closeDrawer(); setView("search"); $("#q").value = n.content.split(/(?<=[.!?])\s/).slice(0,2).join(" ").replace(/\[\[|\]\]|##/g,"").slice(0,120); setMode("meaning"); runSearch(); }
+
+/* =========================================================
+   MAP
+   ========================================================= */
+const svg = $("#svg"), vp=$("#vp");
+let view = {x:0,y:0,k:1}, W=0,H=0;
+const nodes = NOTES.map(n=>({n}));
+const NODE = {};
+const hiddenFolders = new Set();
+function territoryAnchor(folder){
+  if(folder==="Notes") return [0,0];
+  const ring = FOLDERS.filter(f=>f.id!=="Notes");
+  const i = ring.findIndex(f=>f.id===folder);
+  const a = (i/ring.length)*Math.PI*2 - Math.PI/2;
+  const R = ["Now","Views","Archive"].includes(folder)?470:360;
+  return [Math.cos(a)*R, Math.sin(a)*R*0.78];
+}
+function degree(n){ return n.links.length + backlinks(n).length; }
+function layout(iter){
+  nodes.forEach(o=>{ if(o.x===undefined){ const [ax,ay]=territoryAnchor(o.n.folder); o.x=ax+(Math.random()-.5)*80; o.y=ay+(Math.random()-.5)*80; o.vx=0;o.vy=0; } NODE[o.n.id]=o; });
+  const E = []; NOTES.forEach(n=>n.links.forEach(l=>E.push([NODE[n.id],NODE[l.to]])));
+  for(let it=0;it<iter;it++){
+    const alpha = 1 - it/iter*0.7;
+    for(let i=0;i<nodes.length;i++){ const a=nodes[i];
+      for(let j=i+1;j<nodes.length;j++){ const b=nodes[j];
+        let dx=a.x-b.x, dy=a.y-b.y, d2=dx*dx+dy*dy+.01; if(d2>40000) continue;
+        const f=Math.min(1100/d2,4)*alpha; dx*=f; dy*=f; a.vx+=dx; a.vy+=dy; b.vx-=dx; b.vy-=dy; } }
+    E.forEach(([a,b])=>{ if(a===b) return; const dx=b.x-a.x, dy=b.y-a.y, d=Math.sqrt(dx*dx+dy*dy)+.01; const f=(d-90)*0.004*alpha; a.vx+=dx/d*f*d*.1; a.vy+=dy/d*f*d*.1; b.vx-=dx/d*f*d*.1; b.vy-=dy/d*f*d*.1; });
+    nodes.forEach(o=>{ const [ax,ay]=territoryAnchor(o.n.folder); const s=o.n.folder==="Notes"?0.03:0.022; o.vx+=(ax-o.x)*s; o.vy+=(ay-o.y)*s; o.vx*=.78; o.vy*=.78; o.vx=Math.max(-25,Math.min(25,o.vx||0)); o.vy=Math.max(-25,Math.min(25,o.vy||0)); o.x+=o.vx; o.y+=o.vy; if(!isFinite(o.x)||!isFinite(o.y)){ o.x=ax+(Math.random()-.5)*60; o.y=ay+(Math.random()-.5)*60; } });
+  }
+  return E;
+}
+let EDGES = layout(380);
+function nodeR(n){ return n.cls==="capture"?5.5: Math.min(4+Math.sqrt(degree(n))*1.9,13); }
+function drawMap(){
+  const edgesG=$("#edges"), nodesG=$("#nodes"), terrG=$("#terrs"), coreG=$("#core");
+  edgesG.innerHTML = EDGES.map(([a,b],i)=>`<line class="edge ${NOTES.find(x=>x.id===a.n.id).links.find(l=>l.to===b.n.id&&l.rel!=="wikilink")?"typed":""}" data-a="${a.n.id}" data-b="${b.n.id}" x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${b.x.toFixed(1)}" y2="${b.y.toFixed(1)}"/>`).join("");
+  nodesG.innerHTML = nodes.map(o=>{ const n=o.n, c=FCOLOR[n.folder]||"#888", r=nodeR(n);
+    const lbl = (n.cls!=="capture" && degree(n)>=7) || n.path==="Now";
+    const ring = n.cls==="capture" ? `<circle r="${r+3}" fill="none" stroke="${c}" stroke-opacity=".45" stroke-width="1"/>`:"";
+    const priv = n.tags.includes("private")||n.tags.includes("transcript") ? `<circle r="1.8" fill="#14110f"/>`:"";
+    return `<g class="node ${lbl?"lbl":""}" data-id="${n.id}" transform="translate(${o.x.toFixed(1)},${o.y.toFixed(1)})">${ring}<circle class="b" r="${r}" fill="${c}"/>${priv}<text x="${r+4}" y="3.5">${esc(n.title.length>34?n.title.slice(0,32)+"…":n.title)}</text></g>`; }).join("");
+  // territories
+  const groups = {}; nodes.forEach(o=>{ (groups[o.n.folder]=groups[o.n.folder]||[]).push(o); });
+  terrG.innerHTML = Object.entries(groups).map(([f,arr])=>{
+    const cx=arr.reduce((s,o)=>s+o.x,0)/arr.length, cy=arr.reduce((s,o)=>s+o.y,0)/arr.length;
+    const ds=arr.map(o=>Math.hypot(o.x-cx,o.y-cy)).sort((a,b)=>a-b); const r=Math.max(34,ds[Math.floor(ds.length*0.7)]+18); const c=FCOLOR[f]||"#888";
+    if(f==="Notes"||arr.length<2) return "";
+    const lab = (FOLDERS.find(x=>x.id===f)||{}).label||f;
+    return `<g class="terr" data-f="${f}"><circle cx="${cx}" cy="${cy}" r="${r}" fill="${c}" fill-opacity=".035" stroke="${c}" stroke-opacity=".16" stroke-dasharray="2 4"/><text x="${cx}" y="${cy-r-8}" text-anchor="middle" fill="${c}" fill-opacity=".75">${esc(lab)}</text></g>`;
+  }).join("");
+  const caps = groups["Notes"]||[]; const cr = caps.length? Math.max(...caps.map(o=>Math.hypot(o.x,o.y)))+22 : 80;
+  coreG.innerHTML = `<circle cx="0" cy="0" r="${cr}" fill="#f0a35e" fill-opacity=".04"/><circle class="core-ring" cx="0" cy="0" r="${cr}"/><circle class="core-ring" cx="0" cy="0" r="${cr+8}" style="stroke-opacity:.15"/><text class="core-label" x="0" y="${-cr-12}" text-anchor="middle">CAPTURE CORE · SACRED · NEVER SHARED</text>`;
+  bindNodes(); applyTimeline(); applyLegend();
+}
+function setVP(){ vp.setAttribute("transform",`translate(${W/2+view.x},${H/2+view.y}) scale(${view.k})`); }
+function fitView(){
+  const xs=nodes.map(o=>o.x), ys=nodes.map(o=>o.y); const x0=Math.min(...xs)-30,x1=Math.max(...xs)+30,y0=Math.min(...ys)-40,y1=Math.max(...ys)+20;
+  const wide=W>900; const padL=wide&&!$("#nowcard").classList.contains("min")?320:16, padR=wide?240:16, padT=30, padB=110;
+  const aw=W-padL-padR, ah=H-padT-padB; view.k=Math.min(aw/(x1-x0), ah/(y1-y0), 1.3);
+  const cx=(x0+x1)/2, cy=(y0+y1)/2; view.x=padL+aw/2-W/2-cx*view.k; view.y=padT+ah/2-H/2-cy*view.k; setVP();
+}
+function resize(){ const r=svg.getBoundingClientRect(); W=r.width; H=r.height; if(!view.init&&W){ if(W<700) $("#nowcard").classList.add("min"),$("#nowMin").textContent="+"; fitView(); view.init=true; } setVP(); }
+window.addEventListener("resize",resize);
+// pan/zoom
+let pan=null;
+svg.addEventListener("pointerdown",e=>{ if(e.target.closest(".node")) return; pan={x:e.clientX,y:e.clientY,vx:view.x,vy:view.y}; svg.classList.add("drag"); svg.setPointerCapture(e.pointerId); });
+svg.addEventListener("pointermove",e=>{ if(!pan) return; view.x=pan.vx+e.clientX-pan.x; view.y=pan.vy+e.clientY-pan.y; setVP(); });
+svg.addEventListener("pointerup",()=>{ pan=null; svg.classList.remove("drag"); });
+svg.addEventListener("wheel",e=>{ e.preventDefault(); const r=svg.getBoundingClientRect(); const mx=e.clientX-r.left-W/2-view.x, my=e.clientY-r.top-H/2-view.y; const f=Math.exp(-e.deltaY*0.0015); const k2=Math.max(.35,Math.min(3.5,view.k*f)); const s=k2/view.k; view.x-=mx*(s-1); view.y-=my*(s-1); view.k=k2; setVP(); },{passive:false});
+const tip=$("#tip");
+function bindNodes(){
+  document.querySelectorAll(".node").forEach(g=>{
+    const id=g.dataset.id, n=BYID[id];
+    g.addEventListener("mouseenter",e=>{ highlightNode(id,true);
+      tip.innerHTML=`<div class="mono dim" style="font-size:11px">${esc(n.path)}</div><div style="font-weight:600;margin:2px 0">${esc(n.title)}</div><div class="row" style="gap:4px"><span class="pill cls-${n.cls}">${n.cls}</span>${n.tags.slice(0,4).map(t=>`<span class="pill tag">${esc(t)}</span>`).join("")}</div><div class="dim" style="font-size:11.5px;margin-top:4px">${fmtDate(n.created)} · ${esc(viaLabel(n.via))}</div>`;
+      tip.style.display="block"; });
+    g.addEventListener("mousemove",e=>{ const r=$("#map").getBoundingClientRect(); tip.style.left=(e.clientX-r.left+14)+"px"; tip.style.top=(e.clientY-r.top+14)+"px"; });
+    g.addEventListener("mouseleave",()=>{ tip.style.display="none"; highlightNode(drawerId); });
+    g.addEventListener("click",e=>{ e.stopPropagation(); openNote(id); });
+  });
+}
+function highlightNode(id){
+  const nb = new Set();
+  if(id){ nb.add(id); const n=BYID[id]; n.links.forEach(l=>nb.add(l.to)); backlinks(n).forEach(l=>nb.add(l.from)); }
+  document.querySelectorAll(".edge").forEach(e=>e.classList.toggle("hi", !!id && (e.dataset.a===id||e.dataset.b===id)));
+  document.querySelectorAll(".node").forEach(g=>{ g.classList.toggle("fade", !!id && !nb.has(g.dataset.id)); });
+}
+function focusNode(id){ const o=NODE[id]; if(!o) return; view.k=Math.max(view.k,1.4); view.x=-o.x*view.k+ (drawerId? -180:0); view.y=-o.y*view.k; vp.style.transition="transform .5s"; setVP(); setTimeout(()=>vp.style.transition="",520); }
+// legend
+function buildLegend(){
+  const counts={}; NOTES.forEach(n=>counts[n.folder]=(counts[n.folder]||0)+1);
+  $("#legend").innerHTML = `<div class="lbl" style="margin:0 0 6px">Folders</div>`+FOLDERS.filter(f=>counts[f.id]).map(f=>`<div class="it ${hiddenFolders.has(f.id)?"off":""}" data-f="${f.id}"><span class="sw" style="background:${f.color}"></span>${f.id==="Notes"?"Notes <span class='dim'>(captures)</span>":esc(f.id)}<span class="n">${counts[f.id]}</span></div>`).join("")+
+   `<div class="dim" style="font-size:11px;margin-top:8px;line-height:1.4">Ringed dot = capture. Dark centre = private/transcript. Dashed line = typed link.</div>`;
+  document.querySelectorAll("#legend .it").forEach(el=>el.onclick=()=>{ const f=el.dataset.f; hiddenFolders.has(f)?hiddenFolders.delete(f):hiddenFolders.add(f); buildLegend(); applyLegend(); });
+}
+function applyLegend(){
+  document.querySelectorAll(".node").forEach(g=>{ g.style.display = hiddenFolders.has(BYID[g.dataset.id].folder)?"none":""; });
+  document.querySelectorAll(".edge").forEach(e=>{ e.style.display = (hiddenFolders.has(BYID[e.dataset.a].folder)||hiddenFolders.has(BYID[e.dataset.b].folder))?"none":""; });
+  document.querySelectorAll(".terr").forEach(t=>t.style.display = hiddenFolders.has(t.dataset.f)?"none":"");
+}
+// timeline
+const T0 = new Date("2026-03-01T00:00:00");
+const TDAYS = Math.round((TODAY-T0)/864e5);
+const tl=$("#tl"); tl.max=TDAYS; tl.value=TDAYS;
+function cutoff(){ return new Date(T0.getTime()+ (+tl.value+1)*864e5 - 1); }
+function applyTimeline(){
+  const c=cutoff(); let shown=0, caps=0;
+  document.querySelectorAll(".node").forEach(g=>{ const n=BYID[g.dataset.id]; const f=n.created>c; g.classList.toggle("future",f); if(!f){shown++; if(n.cls==="capture") caps++;} });
+  document.querySelectorAll(".edge").forEach(e=>{ e.style.opacity = (BYID[e.dataset.a].created>c||BYID[e.dataset.b].created>c)?0:""; });
+  $("#tlDate").textContent = +tl.value>=TDAYS ? "Today" : fmtDate(c);
+  $("#tlCount").textContent = `${shown} notes · ${caps} captures`;
+}
+tl.addEventListener("input",applyTimeline);
+let playing=null;
+function togglePlay(){
+  if(playing){ clearInterval(playing); playing=null; $("#play").textContent="▶ Play"; return; }
+  if(+tl.value>=TDAYS) tl.value=0;
+  $("#play").textContent="❚❚ Pause";
+  playing=setInterval(()=>{ tl.value=+tl.value+2; applyTimeline(); if(+tl.value>=TDAYS){ togglePlay(); } },45);
+}
+$("#play").onclick=togglePlay;
+// now card
+function renderNow(){
+  const now = resolve("Now"); const comm = resolve("Uni/Commitments");
+  const todayCaps = NOTES.filter(n=>n.cls==="capture"&&daysAgo(n.created)<=0);
+  const openItems = (comm.content.split("## Done")[0].match(/^- .+$/gm)||[]);
+  const unlinked = NOTES.filter(n=>n.cls==="capture"&&n.links.length===0).length;
+  $("#nowBody").innerHTML = `<div class="dim" style="font-size:12px">Thu, Sep 24 · refreshed by Uni 06:00</div>
+    <div class="sec">FOCUS</div><div class="content" style="font-size:13.5px">${renderMD(now.content.split("## Season")[0].replace("## Focus this week\n",""))}</div>
+    <div class="sec">TODAY</div><div style="font-size:13.5px">${todayCaps.length} new capture${todayCaps.length===1?"":"s"} today · ${openItems.length} open commitments · ${unlinked} capture${unlinked===1?"":"s"} still unlinked</div>
+    <div class="row" style="margin-top:10px"><button class="btn sm" data-open="${now.id}">Open Now</button><button class="btn sm" data-open="${comm.id}">Commitments</button></div>`;
+}
+$("#nowMin").onclick=()=>{ const c=$("#nowcard"); c.classList.toggle("min"); $("#nowMin").textContent=c.classList.contains("min")?"+":"–"; };
+
+/* =========================================================
+   MEANING (simulated embeddings)
+   ========================================================= */
+const STOP = new Set("a an the and or but if of to in on at for with from by is are was were be been it its i me my we our you your he she they them this that these those as so do did does have has had not no just about into than then there what when where who why how all any some can could would should will up out over again very really am".split(" "));
+function stem(w){ if(w.length>5&&w.endsWith("ing")) return w.slice(0,-3); if(w.length>4&&w.endsWith("ies")) return w.slice(0,-3)+"y"; if(w.length>4&&w.endsWith("ed")) return w.slice(0,-2); if(w.length>4&&w.endsWith("ly")) return w.slice(0,-2); if(w.length>3&&w.endsWith("s")&&!w.endsWith("ss")) return w.slice(0,-1); return w; }
+function toks(s){ return (s.toLowerCase().replace(/[’']/g,"'").match(/[a-zà-ÿ0-9$']+/g)||[]).map(w=>w.replace(/'s$/,"").replace(/'/g,"")).filter(w=>w&&!STOP.has(w)).map(stem); }
+const CONCEPTS = {
+  strain:{label:"feeling stretched / worried", w:"worry worried anxious nervous afraid stress stressed overwhelm overwhelmed tired exhausted dread uneasy burnout snapped sleep couldn't thin stretched too much carrying alone heavy strain pressure panic give"},
+  money:{label:"money & funding", w:"money grant funding fund budget fundraiser donation donated rent cost dollars pay $18,000 reserve afford lease raise financial broke cash"},
+  bikes:{label:"the bike co-op", w:"bike bicycle wheel repair repairs spoke tube flat chain co-op coop workshop mechanic grease workbench volunteer volunteers board"},
+  writing:{label:"writing the book", w:"write writing wrote essay book draft chapter editor manuscript pages words thesis porch argument paragraph publish"},
+  family:{label:"family", w:"mom mother dad father family nephew parents home harrow sister brother son daughter tests"},
+  partner:{label:"life with Theo", w:"theo partner dinner together read aloud"},
+  garden:{label:"the garden", w:"garden beds soil tomato tomatoes seed seeds compost plant planting harvest frost beans squash garlic mulch trellis grow growing water"},
+  music:{label:"music & cello", w:"cello music practice scales bow lesson lessons bach strings instrument"},
+  commons:{label:"sharing & the commons", w:"community neighbor neighbors commons together library lending lend borrow borrowing share sharing shared belonging infrastructure things tool tools ladder saw"},
+  body:{label:"body & movement", w:"run running knee body doctor walk trail legs health"},
+  rest:{label:"rest & slowness", w:"slow slowly rest rested resting pause paused pausing quiet ease unhurried patience fewer break sabbath breathe"},
+  nature:{label:"seasons & the river", w:"river trail mountain forest snow snowmelt rain autumn fall leaves summer spring winter longest day heat heatwave"},
+  obligation:{label:"promises & deadlines", w:"deadline due friday monday tomorrow schedule late calendar overdue need email promise commit commitment remember ask call"},
+  decision:{label:"a decision", w:"decide decided decision choice whether quit quitting commit something has to give"},
+  joy:{label:"joy & gratitude", w:"happy joy delight glad laugh grateful gratitude grinning love point cried good approved"},
+  grief:{label:"loss & memory", w:"cried grief loss miss memory wrench kept gave dad's old sorted"},
+};
+const LEX = {};
+Object.entries(CONCEPTS).forEach(([c,o])=>o.w.split(/\s+/).forEach(w=>{ const s=stem(w.toLowerCase().replace(/'s$/,"").replace(/'/g,"")); (LEX[s]=LEX[s]||new Set()).add(c); }));
+const PERSON_TOK = {}; Object.entries(PERSON_ALIASES).forEach(([p,al])=>{ al.concat(p.toLowerCase().split(" ")).forEach(a=>{ if(a!=="partner"&&a!=="nephew"&&a!=="mother") PERSON_TOK[stem(a.replace(/'s$/,""))]=p; }); });
+function embed(text){
+  const v = new Map(), words=new Set(), ppl=new Set(); const T=toks(text);
+  T.forEach(t=>{ words.add(t); v.set("w:"+t,(v.get("w:"+t)||0)+0.45);
+    (LEX[t]||[]).forEach(c=>v.set("c:"+c,(v.get("c:"+c)||0)+1));
+    if(PERSON_TOK[t]){ ppl.add(PERSON_TOK[t]); v.set("p:"+PERSON_TOK[t],(v.get("p:"+PERSON_TOK[t])||0)+1.3); } });
+  let norm=0; v.forEach(x=>norm+=x*x); norm=Math.sqrt(norm)||1;
+  return {v,norm,words,ppl};
+}
+function cosine(a,b){ let s=0; const [x,y]=a.v.size<b.v.size?[a,b]:[b,a]; x.v.forEach((val,k)=>{ const o=y.v.get(k); if(o) s+=val*o; }); return s/(a.norm*b.norm); }
+function chunksOf(n){
+  const body = n.content.replace(/^## .*$/gm,"").replace(/\[\[([^\]]+)\]\]/g,(m,x)=>x.split("/").pop());
+  const sents = body.split(/(?<=[.!?:])\s+|\n+/).map(s=>s.replace(/^- /,"").trim()).filter(s=>s.length>2);
+  const out=[]; for(let i=0;i<sents.length;i+=2) out.push(sents.slice(i,i+2).join(" "));
+  return out.length?out:[n.title];
+}
+const EMB = {};
+function embedNote(n){ EMB[n.id] = chunksOf(n).map((c,i)=>({text:c, e:embed((i===0?n.title+" ":"")+c)})); }
+NOTES.forEach(embedNote);
+
+const MONTH_WORDS = {january:0,february:1,march:2,april:3,may:4,june:5,july:6,august:7,september:8,october:9,november:10,december:11};
+function timeWindow(q){
+  const l=q.toLowerCase();
+  for(const [m,i] of Object.entries(MONTH_WORDS)) if(new RegExp("\\b"+m+"\\b").test(l) && !(m==="june"&&/june('s)?\s+(park|said|note)/.test(l)) && !(m==="may"&&!/\bin may\b/.test(l))) return {from:new Date(2026,i,1),to:new Date(2026,i+1,1),label:m[0].toUpperCase()+m.slice(1)};
+  if(/\bspring\b/.test(l)) return {from:new Date(2026,2,1),to:new Date(2026,5,1),label:"spring"};
+  if(/\bsummer\b/.test(l)) return {from:new Date(2026,5,1),to:new Date(2026,8,1),label:"summer"};
+  if(/\b(autumn|fall)\b/.test(l)) return {from:new Date(2026,8,1),to:new Date(2026,11,1),label:"autumn"};
+  if(/\b(lately|recently|this week|past week|last few days)\b/.test(l)) return {from:new Date(TODAY-14*864e5),to:new Date(TODAY.getTime()+864e5),label:"recently"};
+  return null;
+}
+function meaningSearch(q){
+  const qe = embed(q); const tw = timeWindow(q);
+  const res = NOTES.map(n=>{
+    let best=null; EMB[n.id].forEach((c,i)=>{ const s=cosine(qe,c.e); if(!best||s>best.s) best={s,i,c}; });
+    let s = best.s;
+    const linkedPeople = n.links.map(l=>BYID[l.to]).filter(t=>t.folder==="People").map(t=>t.path.slice(7));
+    const pHits = [...qe.ppl].filter(p=>linkedPeople.includes(p)||n.path==="People/"+p);
+    if(pHits.length) s += 0.07*pHits.length;
+    let inWin = tw && n.created>=tw.from && n.created<tw.to; if(inWin) s+=0.1;
+    return {n,s,best,pHits,inWin,linkedPeople,nchunks:EMB[n.id].length};
+  }).filter(r=>r.s>0.16).sort((a,b)=>b.s-a.s).slice(0,8);
+  // explanations
+  const qConcepts = [...qe.v.keys()].filter(k=>k.startsWith("c:")).map(k=>k.slice(2));
+  res.forEach(r=>{
+    const why=[];
+    const shared = qConcepts.filter(c=>r.best.c.e.v.has("c:"+c));
+    if(shared.length) why.push(["◆", `Shares the idea${shared.length>1?"s":""} of <b>${shared.map(c=>CONCEPTS[c].label).join("</b> and <b>")}</b>`]);
+    const sharedWords = [...qe.words].filter(w=>r.best.c.e.words.has(w));
+    if(!sharedWords.length && shared.length) why.push(["≈", "None of your exact words here: matched on meaning (teal = related words)"]);
+    else if(sharedWords.length) why.push(["“", `Also uses your word${sharedWords.length>1?"s":""} <i>${sharedWords.slice(0,4).join(", ")}</i>`]);
+    if(r.pHits.length) why.push(["●", `Linked to <b>${r.pHits.join(", ")}</b>, who you named`]);
+    else if(r.linkedPeople.length){ const other = r.linkedPeople.filter(p=>res.filter(x=>x!==r&&x.linkedPeople.includes(p)).length>=2); if(other.length) why.push(["●", `Links to <b>${other[0]}</b>, who appears in ${res.filter(x=>x!==r&&x.linkedPeople.includes(other[0])).length} other results`]); }
+    if(r.inWin) why.push(["◷", `Written in ${MONTHS[r.n.created.getMonth()]}, which fits “${tw.label}”`]);
+    else if(daysAgo(r.n.created)<=21) why.push(["◷", `Recent: ${ago(r.n.created)}`]);
+    if(r.n.cls==="capture") why.push(["✎", "Your own words (a capture), not Uni's summary"]);
+    r.why=why; r.shared=shared;
+  });
+  return {res, qe};
+}
+function keywordSearch(q){
+  const qt = [...new Set(toks(q))]; if(!qt.length) return {res:[]};
+  const df={}; NOTES.forEach(n=>{ const s=new Set(toks(n.title+" "+n.content)); qt.forEach(t=>{ if(s.has(t)) df[t]=(df[t]||0)+1; }); });
+  const res = NOTES.map(n=>{
+    const tt=toks(n.title), ct=toks(n.content); let s=0; const hits={}, titleHits=[];
+    qt.forEach(t=>{ const idf=Math.log(1+NOTES.length/((df[t]||0)+.5)); const tf=ct.filter(x=>x===t).length, tif=tt.filter(x=>x===t).length; if(tf||tif){ hits[t]=tf+tif; s+=idf*(tf/(tf+1.2))+idf*5*tif; if(tif) titleHits.push(t);} });
+    if(!s) return null;
+    let best=null; EMB[n.id].forEach(c=>{ const h=qt.filter(t=>c.e.words.has(t)).length; if(!best||h>best.h) best={h,c}; });
+    const why=[]; if(titleHits.length) why.push(["▲",`Title contains <i>${titleHits.join(", ")}</i> (titles weigh ~5×)`]);
+    why.push(["“",`${Object.values(hits).reduce((a,b)=>a+b,0)} exact hit${Object.values(hits).reduce((a,b)=>a+b,0)>1?"s":""} of <i>${Object.keys(hits).join(", ")}</i>`]);
+    const miss = qt.filter(t=>!hits[t]); if(miss.length) why.push(["∅",`Missing <i>${miss.join(", ")}</i>; keyword mode can't bridge synonyms`]);
+    return {n,s,best:{c:best.c},why,nchunks:EMB[n.id].length};
+  }).filter(Boolean).sort((a,b)=>b.s-a.s).slice(0,8);
+  return {res};
+}
+function highlight(text, qe, shared){
+  return esc(text).replace(/[A-Za-zÀ-ÿ0-9$']+/g,w=>{ const t=stem(w.toLowerCase().replace(/'s$/,"").replace(/'/g,""));
+    if(qe.words.has(t)) return `<mark>${w}</mark>`;
+    if(shared && [...(LEX[t]||[])].some(c=>shared.includes(c))) return `<mark class="c">${w}</mark>`;
+    return w; });
+}
+let MODE="meaning", searchSeq=0;
+function setMode(m){ MODE=m; document.querySelectorAll("#mode button").forEach(b=>b.classList.toggle("on",b.dataset.m===m)); }
+document.querySelectorAll("#mode button").forEach(b=>b.onclick=()=>{ setMode(b.dataset.m); if($("#q").value.trim()) runSearch(); });
+async function runSearch(){
+  const q=$("#q").value.trim(); const seq=++searchSeq; const R=$("#results");
+  if(!q){ R.innerHTML=""; $("#sstatus").textContent=""; return; }
+  $("#sstatus").textContent = MODE==="meaning" ? "embedding query (bge-small, local) → ranking "+NOTES.length+" notes by best chunk…" : "FTS5 · title-weighted bm25…";
+  R.innerHTML = '<div class="shimmer"></div><div class="shimmer" style="opacity:.7"></div><div class="shimmer" style="opacity:.4"></div>';
+  const t0=performance.now();
+  await sleep(MODE==="meaning"?jitter(380,620):jitter(120,220));
+  if(seq!==searchSeq) return;
+  const out = MODE==="meaning"? meaningSearch(q) : keywordSearch(q);
+  const ms = Math.round(performance.now()-t0);
+  const nChunks = Object.values(EMB).reduce((a,b)=>a+b.length,0);
+  $("#sstatus").textContent = MODE==="meaning" ? `${out.res.length} results · ${nChunks} chunks compared · ${ms} ms · searching as Wren (owner, sees everything)` : `${out.res.length} results · ${ms} ms · exact words only`;
+  if(!out.res.length){ R.innerHTML = `<div class="empty">${MODE==="keyword"?`Nothing contains those exact words.<br><button class="btn sm" style="margin-top:10px" onclick="setMode('meaning');runSearch()">Try Meaning search <kbd>M</kbd></button>`:"Nothing close in meaning. Try describing a feeling, a person, or a season."}</div>`; return; }
+  const max = out.res[0].s;
+  R.innerHTML = out.res.map((r,i)=>{
+    const disp = MODE==="meaning" ? Math.min(0.94, 0.38+0.52*r.s) : r.s;
+    const pct = MODE==="meaning" ? Math.round(disp*100) : Math.round(r.s/max*100);
+    const chunk = highlight(r.best.c.text, MODE==="meaning"?out.qe:{words:new Set(toks(q))}, r.shared);
+    return `<div class="card res" style="animation-delay:${i*55}ms">
+      <div><div class="top"><span class="ttl" data-open="${r.n.id}">${esc(r.n.title)}</span><span class="pill cls-${r.n.cls}">${r.n.cls}</span></div>
+      <div class="p">${esc(r.n.path)} · ${fmtDate(r.n.created)}</div>
+      <div class="chunk">${chunk}</div>
+      <ul class="why">${r.why.map(([i,t])=>`<li data-i="${i}">${t}</li>`).join("")}</ul></div>
+      <div class="score"><div class="v">${MODE==="meaning"?disp.toFixed(3):r.s.toFixed(2)}</div><div class="l">${MODE==="meaning"?"cosine · best of "+r.nchunks+" chunk"+(r.nchunks>1?"s":""):"bm25 (relative)"}</div><div class="bar"><i style="width:${pct}%"></i></div></div>
+    </div>`; }).join("");
+}
+let sTimer; $("#q").addEventListener("input",()=>{ clearTimeout(sTimer); sTimer=setTimeout(runSearch,350); });
+$("#q").addEventListener("keydown",e=>{ if(e.key==="Enter"){ clearTimeout(sTimer); runSearch(); } });
+const QCHIPS = ["when did I feel stretched too thin?","how is the money situation for the co-op","things Theo and I grew together","what did people tell me about writing slower","moments I was proud of Rafi","anything about Dad","what did I promise to do this week"];
+$("#qchips").innerHTML = QCHIPS.map(c=>`<button class="chip">${esc(c)}</button>`).join("");
+document.querySelectorAll("#qchips .chip").forEach(b=>b.onclick=()=>{ $("#q").value=b.textContent; runSearch(); });
+
+/* =========================================================
+   CAPTURE → LINK
+   ========================================================= */
+const CAP_SAMPLES = [
+  "Ran into Kofi at Café Mirabel. He thinks the River Shelf needs a coordinator or the volunteers will burn out. I'll ask Ines if the grant can pay for ten hours a week.",
+  "Theo planted the garlic today, twelve cloves in the bad corner. I need to remember to mulch before the first frost.",
+  "Talked to Mom for an hour. She's lonely since the workshop emptied out. I should visit Harrow Bay in November, maybe bring Rafi.",
+  "Can't stop thinking about Chapter 3. What if the whole book is just the borrowed ladder story told eight ways? Email June by Monday.",
+];
+const VOICE = ["Okay, quick one while I walk.","Kofi stopped by the workshop and said the repair café sign is done, and honestly it's beautiful.","I promised Ines I'd take half the volunteer rota for the fundraiser, so I need to send her my dates by Sunday.","Feeling lighter than last week."];
+$("#capChips").innerHTML = CAP_SAMPLES.map((c,i)=>`<button class="chip" data-i="${i}">${esc(c.split(/[.!?]/)[0].slice(0,42))}…</button>`).join("");
+document.querySelectorAll("#capChips .chip").forEach(b=>b.onclick=()=>{ $("#capText").value=CAP_SAMPLES[+b.dataset.i]; $("#capText").focus(); });
+$("#wave").innerHTML = Array.from({length:18},(_,i)=>`<i style="animation-delay:${(i*57)%900}ms"></i>`).join("");
+let recording=false, recKind="text";
+$("#recBtn").onclick = async ()=>{
+  if(recording) return; recording=true; recKind="voice";
+  const b=$("#recBtn"); b.classList.add("on"); $("#recLbl").textContent="Recording…"; $("#wave").style.display="flex";
+  const ta=$("#capText"); ta.value=""; ta.placeholder="listening…";
+  await sleep(2200);
+  $("#wave").style.display="none"; $("#recLbl").textContent="Transcribing…";
+  await sleep(500);
+  const words = VOICE.join(" ").split(" ");
+  for(const w of words){ ta.value += (ta.value?" ":"")+w; await sleep(jitter(28,70)); }
+  b.classList.remove("on"); $("#recLbl").textContent="Record"; recording=false; ta.placeholder="";
+  toast("🎙 voice-memo.m4a · 0:14 transcribed locally");
+};
+let SUGS=[], sugFocus=0, currentCap=null;
+function nowStamp(){ const d=new Date(TODAY); const r=new Date(); d.setHours(r.getHours(),r.getMinutes(),r.getSeconds()); return d; }
+async function saveCapture(){
+  const text=$("#capText").value.trim(); if(!text){ toast("Say or type something first"); $("#capText").focus(); return; }
+  const d=nowStamp(); const p2=x=>String(x).padStart(2,"0");
+  const path=`Notes/${d.getFullYear()}/${p2(d.getMonth()+1)}-${p2(d.getDate())}/${p2(d.getHours())}-${p2(d.getMinutes())}-${p2(d.getSeconds())}`;
+  const tags=["capture"]; if(recKind==="voice") tags.push("voice");
+  const n={path,tags,created:d,via:"app",content:text,links:[],meta:{kind:recKind}, typed:[], extraLinks:[], isNew:true};
+  NOTES.push(n); indexNote(n); n.sha=hash(text); embedNote(n); currentCap=n; recKind="text";
+  $("#capText").value="";
+  $("#frozen").innerHTML = `<div class="card frozen"><div class="row" style="justify-content:space-between"><span class="mono dim" style="font-size:12px">${esc(path)}</span><span class="pill cls-capture">🔒 capture · frozen</span></div>
+    <div class="txt">${esc(text)}</div>
+    <div class="row" style="font-size:12px"><span class="dim">created_via <span class="mono">app</span> · sha <span class="mono">${n.sha}</span></span><span id="capTags" class="row" style="gap:4px"></span></div>
+    <div class="hashok" id="hashok"></div>
+    <div class="row" style="margin-top:10px"><button class="btn sm" onclick="openNote('${n.id}')">Open note</button><button class="btn sm" onclick="showOnMap('${n.id}')">See it in the map</button></div></div>`;
+  renderCapTags();
+  toast("Saved to "+path.split("/").slice(0,3).join("/")+"/…");
+  addToMap(n);
+  await runPipeline(n);
+}
+function renderCapTags(){ if(!currentCap) return; $("#capTags").innerHTML=currentCap.tags.map(t=>`<span class="pill tag ${PRIVACY.has(t)?"lock":""}">${esc(t)}</span>`).join(""); $("#hashok").textContent=`content sha ${hash(currentCap.content)} · unchanged ✓ (${currentCap.links.length} links, ${currentCap.tags.length} tags added around it)`; }
+async function runPipeline(n){
+  const steps=["chunking + embedding (3 chunks)","matching people & places","checking projects","looking for promises & dates","finding echoes in past captures"];
+  const P=$("#pipeline"); P.innerHTML=steps.map(s=>`<li>${s}</li>`).join(""); $("#sugs").innerHTML=""; $("#accAll").disabled=true; SUGS=[];
+  const lis=[...P.children];
+  const all = buildSuggestions(n);
+  const byStep = [ [], all.filter(s=>s.kind==="person"||s.kind==="place"), all.filter(s=>s.kind==="project"||s.kind==="tag"), all.filter(s=>s.kind==="commit"||s.kind==="private"), all.filter(s=>s.kind==="echo"||s.kind==="thread") ];
+  for(let i=0;i<lis.length;i++){
+    lis[i].className="run"; await sleep(jitter(350,650));
+    lis[i].className="done";
+    for(const s of byStep[i]){ addSug(s); await sleep(jitter(140,320)); }
+  }
+  if(!SUGS.length) $("#sugs").innerHTML='<div class="empty">Nothing to propose. Some captures just are. It stays in your core, unlinked, and that\'s fine.</div>';
+  $("#accAll").disabled=!SUGS.length; focusSug(0);
+}
+function buildSuggestions(n){
+  const out=[]; const d=detect(n.content); const e=embed(n.content);
+  d.people.forEach(p=>{ const t=resolve("People/"+p); out.push({kind:"person",ic:"●",what:`Link <b>${p}</b> as <span class="mono">mentions</span>`,why:`You said “${PERSON_ALIASES[p].find(a=>n.content.toLowerCase().includes(a))}”. ${esc(t.meta.relation||"")}.`,diff:`${t.path}  ← backlink appears (note unchanged)`,apply:()=>addLink(n,t,"mentions")}); });
+  d.places.forEach(p=>{ const t=resolve("Places/"+p); out.push({kind:"place",ic:"⌖",what:`Link place <b>${p}</b> as <span class="mono">at</span>`,why:"Named in the capture.",diff:`${t.path}  ← backlink`,apply:()=>addLink(n,t,"at")}); });
+  d.projects.forEach(p=>{ const t=resolve("Projects/"+p); const line=`- ${MONTHS[n.created.getMonth()]} ${n.created.getDate()}: ${n.content.split(/(?<=[.!?])\s/)[0].slice(0,70)} (from capture)`;
+    out.push({kind:"project",ic:"◇",what:`Update project <b>${p}</b>`,why:`Mentions ${PROJECT_KEYS[p].filter(k=>n.content.toLowerCase().includes(k)).slice(0,2).map(k=>"“"+k+"”").join(", ")}. Project notes are derived, so Uni may append to their log.`,diff:`${t.path}  ## Log\n+ ${line.slice(2)}`,apply:()=>{ addLink(n,t,"about"); t.content+="\n"+line; relink(t); embedNote(t); }}); });
+  const tagMap={bikes:"co-op",money:"money",family:"family",garden:"garden",music:"music",writing:"book",body:"health"};
+  const cs=[...e.v.keys()].filter(k=>k.startsWith("c:")).map(k=>k.slice(2));
+  [...new Set(cs.map(c=>tagMap[c]).filter(Boolean))].slice(0,3).forEach(t=>{ const c=cs.find(x=>tagMap[x]===t); out.push({kind:"tag",ic:"#",what:`Add tag <span class="pill tag">${t}</span>`,why:`Reads as <i>${CONCEPTS[c].label}</i>. Tags sit beside the words; they don't change them.`,diff:`tags: + ${t}`,apply:()=>{ if(!n.tags.includes(t)) n.tags.push(t); }}); });
+  const m = n.content.match(/\b(i'll|i will|i need to|need to|i should|i promised|promised|remember to|have to|must)\b([^.!?]*)/i);
+  if(m){ const due=(n.content.match(/\bby (monday|tuesday|wednesday|thursday|friday|saturday|sunday|tomorrow|next week|the end of the month)\b/i)||[])[1];
+    const task=(m[1]+m[2]).replace(/^(i'll|i will|i need to|need to|i should|i promised|promised|remember to|have to|must)\s*/i,"").replace(/\s+by \w+( week)?$/i,"").replace(/^[A-Z][a-z]+\s+(I'?d|I would|that I'?d)\s+/,"").trim();
+    const comm=resolve("Uni/Commitments");
+    out.push({kind:"commit",ic:"✔",what:`Track commitment: “${esc(task.charAt(0).toUpperCase()+task.slice(1))}”`,why:`You wrote “${esc(m[1])}”${due?` and “by ${esc(due)}”`:""}. It'll show in Now and your morning brief.`,diff:`Uni/Commitments  ## Open\n+ ${task}${due?" — due "+due:""}  (source: this capture)`,apply:()=>{ comm.content=comm.content.replace("## Open\n",`## Open\n- ${task.charAt(0).toUpperCase()+task.slice(1)}${due?" — due "+due:""}\n`); addLink(comm,n,"source"); relink(comm); renderNow(); }}); }
+  if(cs.includes("strain") || cs.includes("grief") || (cs.includes("family")&&cs.includes("strain"))){ out.push({kind:"private",ic:"🔒",what:`Mark <span class="pill tag lock">private</span>`,why:"Sounds personal. Captures are already never shared, but #private also keeps it out of Uni's summaries.",diff:"tags: + private",apply:()=>{ if(!n.tags.includes("private")) n.tags.push("private"); }}); }
+  const echoes = NOTES.filter(x=>x.cls==="capture"&&x!==n).map(x=>({x,s:Math.max(...EMB[x.id].map(c=>cosine(e,c.e)))})).filter(o=>o.s>0.28).sort((a,b)=>b.s-a.s).slice(0,2);
+  echoes.forEach(o=>out.push({kind:"echo",ic:"≈",what:`Echoes <b>${fmtDate(o.x.created)}</b>: “${esc(o.x.title)}”`,why:`Similar in meaning (cosine ${(0.38+0.52*o.s).toFixed(2)}). Linking lets future-you see the thread.`,diff:`typed link: echoes → ${o.x.path}`,apply:()=>addLink(n,o.x,"echoes")}));
+  if(cs.includes("rest")||cs.includes("strain")){ const t=resolve("Life/Thread — Rest vs. Momentum"); out.push({kind:"thread",ic:"∿",what:`Add to life thread <b>Rest vs. Momentum</b>`,why:"This thread has surfaced in May, August and September.",diff:`${t.path}  ← backlink`,apply:()=>addLink(n,t,"thread")}); }
+  else if(d.people.includes("Delia Halloway")){ const t=resolve("Life/Thread — Mom's health"); out.push({kind:"thread",ic:"∿",what:`Add to life thread <b>Mom's health</b>`,why:"You mentioned Mom; this thread tracks her.",diff:`${t.path}  ← backlink`,apply:()=>addLink(n,t,"thread")}); }
+  return out;
+}
+function addLink(from,to,rel){ from.extraLinks=from.extraLinks||[]; if(!from.links.some(l=>l.to===to.id&&l.rel===rel)){ from.extraLinks.push({to:to.id,rel}); from.links.push({to:to.id,rel}); } }
+function addSug(s){
+  if(!SUGS.length) $("#sugs").innerHTML="";
+  s.i=SUGS.length; s.state="open"; SUGS.push(s);
+  const el=document.createElement("div"); el.className="card sug"; el.tabIndex=0; el.id="sug"+s.i;
+  el.innerHTML=`<div class="ic">${s.ic}</div><div class="main"><div class="what">${s.what}</div><div class="rsn">${s.why}</div><div class="diff">${esc(s.diff)}</div><div class="res-l"></div></div>
+    <div class="act"><button class="btn sm pri" data-a="acc">Accept</button><button class="btn sm ghost" data-a="rej">Reject</button></div>`;
+  el.querySelector('[data-a=acc]').onclick=()=>decide(s.i,true);
+  el.querySelector('[data-a=rej]').onclick=()=>decide(s.i,false);
+  el.onfocus=()=>{sugFocus=s.i;};
+  $("#sugs").appendChild(el);
+}
+async function decide(i,ok){
+  const s=SUGS[i]; if(!s||s.state!=="open") return;
+  s.state=ok?"acc":"rej"; const el=$("#sug"+i); el.classList.add(ok?"acc":"rej");
+  el.querySelector(".res-l").innerHTML = ok? '<span style="color:var(--acc2)">✓ applied</span>' : '<span class="dim">rejected. Uni will remember not to suggest this pairing</span>';
+  if(ok){ const before=hash(currentCap.content); s.apply(); if(hash(currentCap.content)!==before) console.error("capture mutated!"); renderCapTags(); refreshMapEdges(); }
+  const next=SUGS.findIndex(x=>x.state==="open"); if(next>=0) focusSug(next); else { $("#accAll").disabled=true; toast("All proposals handled. The capture's words are untouched."); }
+}
+function focusSug(i){ const el=$("#sug"+i); if(el){ sugFocus=i; el.focus({preventScroll:false}); } }
+$("#accAll").onclick=async()=>{ for(const s of SUGS){ if(s.state==="open"){ decide(s.i,true); await sleep(120);} } };
+$("#capSave").onclick=saveCapture;
+$("#capText").addEventListener("keydown",e=>{ if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){ e.preventDefault(); saveCapture(); } });
+function addToMap(n){
+  const o={n, x:(Math.random()-.5)*60, y:(Math.random()-.5)*60, vx:0, vy:0}; nodes.push(o); NODE[n.id]=o;
+  EDGES = layout(60); drawMap(); renderNow(); buildLegend();
+  const g=document.querySelector(`.node[data-id="${n.id}"]`); if(g) g.classList.add("new");
+}
+function refreshMapEdges(){ EDGES = layout(40); drawMap(); if(currentCap){ const g=document.querySelector(`.node[data-id="${currentCap.id}"]`); if(g) g.classList.add("new"); } renderShare(); }
+
+/* =========================================================
+   SCOPED SHARING
+   ========================================================= */
+const COLLABS = [
+  {id:"theo",name:"Theo Ruiz",role:"partner",color:"#e58a8a",tags:["garden","family"]},
+  {id:"ines",name:"Ines Marrow",role:"co-op co-founder",color:"#8fc7b1",tags:["co-op","money"]},
+  {id:"june",name:"June Park",role:"editor, Fernwood Press",color:"#e5c96f",tags:["book","writing"]},
+  {id:"agent",name:"Uni · #co-op channel",role:"a Buzz channel agent",color:"#7fd1d8",tags:["co-op","meeting","project"]},
+];
+let collab=COLLABS[0]; const grants={}; COLLABS.forEach(c=>grants[c.id]=new Set(c.tags));
+let ttlSel="7d", roleSel="read"; const TOKENS=[];
+function tagCounts(){ const c={}; NOTES.forEach(n=>n.tags.forEach(t=>c[t]=(c[t]||0)+1)); return c; }
+function tagMatches(t, allowed){ let x=t; while(x){ if(allowed.has(x)) return true; x=TAG_PARENTS[x]; } return false; }
+function visibility(n, allowed){
+  const inScope = n.tags.some(t=>tagMatches(t,allowed));
+  const held = n.tags.some(t=>PRIVACY.has(t));
+  if(inScope && held) return "held"; if(inScope) return "vis";
+  return held ? "hidlock" : "hid";
+}
+function renderShare(){
+  $("#collabs").innerHTML = COLLABS.map(c=>`<div class="collab ${c===collab?"on":""}" data-c="${c.id}"><div class="av" style="background:${c.color}">${c.id==="agent"?"U":c.name[0]}</div><div>${esc(c.name)}<small>${esc(c.role)} · ${grants[c.id].size} tag${grants[c.id].size===1?"":"s"}</small></div></div>`).join("");
+  document.querySelectorAll(".collab").forEach(el=>el.onclick=()=>{ collab=COLLABS.find(c=>c.id===el.dataset.c); renderShare(); });
+  const counts=tagCounts(); const allowed=grants[collab.id];
+  const order=Object.keys(counts).sort((a,b)=> (PRIVACY.has(a)-PRIVACY.has(b)) || counts[b]-counts[a]);
+  $("#tagpick").innerHTML = order.map(t=>{ const lk=PRIVACY.has(t); const on=allowed.has(t)||(!lk&&tagMatches(t,allowed)&&!allowed.has(t));
+    return `<label class="${lk?"locked":on?"on":""}" title="${lk?"Never granted to shared tokens":TAG_PARENTS[t]&&allowed.has(TAG_PARENTS[t])?"Included via parent tag "+TAG_PARENTS[t]:""}"><input type="checkbox" data-t="${esc(t)}" ${on?"checked":""} ${lk?"disabled":""}>${lk?"🔒 ":""}${esc(t)} <span class="c">${counts[t]}</span></label>`; }).join("")
+    + (["life"].filter(p=>!counts[p]).map(p=>`<label class="${allowed.has(p)?"on":""}" title="Parent tag: includes life/month, life/year, life/era, life/thread"><input type="checkbox" data-t="${p}" ${allowed.has(p)?"checked":""}>${p} <span class="c">parent</span></label>`).join(""));
+  document.querySelectorAll("#tagpick input").forEach(i=>i.onchange=()=>{ const t=i.dataset.t; i.checked?allowed.add(t):allowed.delete(t); renderShare(); });
+  let vis=0, held=0; const groups={};
+  NOTES.forEach(n=>{ const v=visibility(n,allowed); if(v==="vis") vis++; if(v==="held") held++; (groups[n.folder]=groups[n.folder]||[]).push([n,v]); });
+  const first=collab.id==="agent"?"This agent":collab.name.split(" ")[0];
+  $("#visSum").textContent = `${first} can see ${vis} of ${NOTES.length} notes`;
+  $("#visSub").innerHTML = held ? `<b style="color:var(--rose)">${held}</b> more carry a tag you shared but stay with you: they're captures, transcripts, or private. <span class="dim">The boundary wins over any grant.</span>` : "Nothing in scope touches the privacy boundary.";
+  const rank={vis:0,held:1,hidlock:2,hid:2}; Object.values(groups).forEach(a=>a.sort((x,y)=>rank[x[1]]-rank[y[1]]));
+  const fsorted=FOLDERS.filter(f=>groups[f.id]).sort((a,b)=>groups[b.id].filter(x=>x[1]==="vis").length/groups[b.id].length-groups[a.id].filter(x=>x[1]==="vis").length/groups[a.id].length);
+  $("#visGrid").innerHTML = fsorted.map(f=>{ const arr=groups[f.id]; const nv=arr.filter(a=>a[1]==="vis").length;
+    return `<div class="folder-g"><div class="fh"><span style="color:${f.color}">●</span>${f.id.toUpperCase()}<span>${nv}/${arr.length}</span></div><div class="ngrid">${arr.map(([n,v])=>`<span class="nchip ${v==="vis"?"vis":v==="held"?"held":"hid"}" data-n="${n.id}" title="${v==="held"?"Held back: carries #"+n.tags.find(t=>PRIVACY.has(t)):v==="vis"?"Visible via #"+n.tags.find(t=>tagMatches(t,allowed)):"Not in scope"}">${esc(n.title)}</span>`).join("")}</div></div>`; }).join("");
+  document.querySelectorAll(".nchip[data-n]").forEach(c=>c.onclick=()=>{ const n=BYID[c.dataset.n]; if(c.classList.contains("vis")) { openNote(n.id); toast(`👁 ${first} would see this note`); } else if(c.classList.contains("held")) toast(`🔒 ${first} can't open this: it carries #${n.tags.find(t=>PRIVACY.has(t))}`); else toast(`Not in ${first}'s scope`); });
+  $("#ttl").innerHTML=["15m","1h","1d","7d","30d","90d"].map(t=>`<button class="${t===ttlSel?"on":""}" data-t="${t}">${t}</button>`).join("");
+  document.querySelectorAll("#ttl button").forEach(b=>b.onclick=()=>{ ttlSel=b.dataset.t; renderShare(); });
+  $("#role").innerHTML=[["read","read"],["member","read + write"]].map(([r,l])=>`<button class="${r===roleSel?"on":""}" data-r="${r}">${l}</button>`).join("");
+  document.querySelectorAll("#role button").forEach(b=>b.onclick=()=>{ roleSel=b.dataset.r; renderShare(); });
+  $("#ttlWarn").innerHTML = (ttlSel==="30d"||ttlSel==="90d") ? `<div class="warn">⚠ Long-lived token: a standing credential. Prefer short expiry and re-minting.</div>` : "";
+  $("#mint").textContent = `Mint token for ${first}`;
+  $("#mint").disabled = !allowed.size;
+  renderTokens();
+}
+const TTLMS={"15m":9e5,"1h":36e5,"1d":864e5,"7d":6048e5,"30d":2592e6,"90d":7776e6};
+function rnd(n){ const a="abcdefghijklmnopqrstuvwxyz0123456789"; let s=""; const r=crypto.getRandomValues(new Uint8Array(n)); r.forEach(x=>s+=a[x%36]); return s; }
+$("#mint").onclick=async()=>{
+  const b=$("#mint"); b.disabled=true; b.textContent="Minting…"; await sleep(jitter(500,800));
+  const allowed=[...grants[collab.id]];
+  TOKENS.unshift({jti:"t_"+rnd(12), token:"pvt_"+rnd(8)+"."+btoa(JSON.stringify({v:"uni",scp:roleSel==="read"?"vault:read":"vault:write",tags:allowed})).replace(/=+$/,"")+"."+rnd(22), who:collab, tags:allowed, role:roleSel, exp:Date.now()+TTLMS[ttlSel], ttl:ttlSel, revoked:false});
+  toast(`🔑 Token minted for ${collab.name.split(" ")[0]} · expires in ${ttlSel}`); renderShare(); const tk=document.querySelector(".tok"); if(tk) tk.scrollIntoView({behavior:"smooth",block:"nearest"});
+};
+function left(ms){ if(ms<=0) return "expired"; const s=Math.floor(ms/1000); if(s<3600) return `${Math.floor(s/60)}m ${s%60}s`; if(s<86400) return `${Math.floor(s/3600)}h ${Math.floor(s%3600/60)}m`; return `${Math.floor(s/86400)}d ${Math.floor(s%86400/3600)}h`; }
+function renderTokens(){
+  $("#tokens").innerHTML = TOKENS.map((t,i)=>`<div class="card tok ${t.revoked?"revoked":""}" style="background:var(--bg2)">
+    <div class="row" style="justify-content:space-between"><b style="font-size:14px">${esc(t.who.name)}</b><span class="mono dim" style="font-size:11.5px" data-exp="${i}">${t.revoked?"revoked":"expires in "+left(t.exp-Date.now())}</span></div>
+    <div class="row" style="gap:4px;margin-top:4px">${t.tags.map(x=>`<span class="pill tag">${esc(x)}</span>`).join("")}<span class="pill">${t.role==="read"?"vault:read":"vault:write"}</span></div>
+    <code>${esc(t.token)}</code>
+    <div class="row" style="justify-content:space-between"><span class="mono dim" style="font-size:11px">jti ${t.jti}</span>${t.revoked?"":`<span class="row" style="gap:6px"><button class="btn sm" data-copy="${i}">Copy</button><button class="btn sm ghost" data-rev="${i}">Revoke</button></span>`}</div></div>`).join("");
+  document.querySelectorAll("[data-rev]").forEach(b=>b.onclick=()=>{ TOKENS[+b.dataset.rev].revoked=true; toast("Token revoked. Idempotent, immediate."); renderTokens(); });
+  document.querySelectorAll("[data-copy]").forEach(b=>b.onclick=()=>{ const t=TOKENS[+b.dataset.copy].token; (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("Copied (it's a fake token)"),()=>toast("Copy unavailable here")); });
+}
+setInterval(()=>{ document.querySelectorAll("[data-exp]").forEach(s=>{ const t=TOKENS[+s.dataset.exp]; if(t&&!t.revoked) s.textContent="expires in "+left(t.exp-Date.now()); }); },1000);
+
+/* =========================================================
+   SHELL: views, keys, modals
+   ========================================================= */
+let VIEW="map";
+function setView(v){ VIEW=v; document.querySelectorAll(".view").forEach(s=>s.classList.toggle("on",s.id===v)); document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.v===v)); if(v==="map") requestAnimationFrame(resize); if(v==="share") renderShare(); if(location.hash!=="#"+v) history.replaceState(null,"","#"+v); }
+document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>setView(b.dataset.v));
+function modal(id,on){ $("#"+id).classList.toggle("on",on); }
+$("#aboutBtn").onclick=()=>modal("about",true); $("#helpBtn").onclick=()=>modal("help",true);
+document.querySelectorAll(".modal-bg").forEach(m=>m.addEventListener("click",e=>{ if(e.target===m||e.target.hasAttribute("data-close")) m.classList.remove("on"); }));
+document.addEventListener("keydown",e=>{
+  const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+  if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)&&VIEW==="capture"&&document.activeElement!==$("#capText")){ e.preventDefault(); saveCapture(); return; }
+  if(e.key==="Escape"){ if(document.querySelector(".modal-bg.on")) document.querySelectorAll(".modal-bg").forEach(m=>m.classList.remove("on")); else if(drawerId) closeDrawer(); else if(typing) document.activeElement.blur(); return; }
+  if(typing||e.ctrlKey||e.metaKey||e.altKey) return;
+  const k=e.key.toLowerCase();
+  if(["1","2","3","4"].includes(k)){ setView(["map","search","capture","share"][+k-1]); return; }
+  if(k==="/"){ e.preventDefault(); setView("search"); $("#q").focus(); return; }
+  if(k==="c"){ e.preventDefault(); setView("capture"); $("#capText").focus(); return; }
+  if(k==="?"){ modal("help",true); return; }
+  if(k==="n"){ openNote(resolve("Now").id); return; }
+  if(k==="t"&&VIEW==="map"){ togglePlay(); return; }
+  if(k==="f"&&VIEW==="map"){ vp.style.transition="transform .4s"; fitView(); setTimeout(()=>vp.style.transition="",420); return; }
+  if(k==="m"&&VIEW==="search"){ setMode(MODE==="meaning"?"keyword":"meaning"); if($("#q").value.trim()) runSearch(); return; }
+  if(VIEW==="capture"&&SUGS.length){
+    if(k==="a") decide(sugFocus,true); else if(k==="r") decide(sugFocus,false);
+    else if(k==="j") focusSug(Math.min(SUGS.length-1,sugFocus+1)); else if(k==="k") focusSug(Math.max(0,sugFocus-1));
+  }
+});
+
+// boot
+buildLegend(); renderNow(); drawMap(); renderShare();
+const h=location.hash.slice(1); setView(["map","search","capture","share"].includes(h)?h:"map");
+requestAnimationFrame(resize);
+if(!sessionStorage.getItem("pn-about")){ sessionStorage.setItem("pn-about","1"); setTimeout(()=>toast("Synthetic data · tap <b>About this prototype</b> for what's real"),900); }
+</script>
+</body>
+</html>
