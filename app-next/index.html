@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Talk to Uni — next (prototype)</title>
+<!--
+  PROTOTYPE. Self-contained, no network. All data is synthetic.
+  Idea: Talk to Uni is one surface over two substrates —
+    Buzz  (conversations: rooms, threads, Uni's replies)
+    Parachute (the vault: captures, notes, people, projects, meaning search)
+  Every object can cross over: a message becomes a note, a note opens a
+  conversation, captures and chats share one stream, search spans both.
+-->
+<style>
+  :root {
+    --bg: #0b1820; --panel: #12232e; --card: #1a2f3c; --line: #2b4150;
+    --ink: #e8f1f5; --dim: #99b2bf; --faint: #5f7a88;
+    --buzz: #77d4d2; --vault: #e6b85c; --uni: #b39cf2; --warn: #f28b82;
+    --r: 14px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #05090c; color: var(--ink);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  body { display: flex; align-items: center; justify-content: center; gap: 40px; padding: 20px; flex-wrap: wrap; }
+  .notes { max-width: 340px; color: var(--dim); font-size: 13px; }
+  .notes h1 { color: var(--ink); font-size: 18px; margin: 0 0 6px; }
+  .notes kbd { background: var(--card); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; font-size: 12px; }
+  .notes li { margin: 5px 0; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; margin-right: 12px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  .d-buzz { background: var(--buzz); } .d-vault { background: var(--vault); } .d-uni { background: var(--uni); }
+
+  .phone { width: 390px; height: 800px; background: var(--bg); border-radius: 44px; border: 10px solid #1d2a31;
+    box-shadow: 0 30px 80px rgba(0,0,0,.6); position: relative; overflow: hidden; display: flex; flex-direction: column; }
+  .status { height: 34px; display: flex; justify-content: space-between; align-items: end; padding: 0 26px 4px; font-size: 12px; color: var(--dim); flex: none; }
+  .top { padding: 6px 16px 8px; display: flex; align-items: center; gap: 10px; flex: none; }
+  .top h2 { margin: 0; font-size: 20px; flex: 1; }
+  .top .sub { font-size: 11px; color: var(--dim); display: block; font-weight: 400; }
+  .iconbtn { background: var(--card); border: 1px solid var(--line); color: var(--ink); width: 36px; height: 36px; border-radius: 12px; cursor: pointer; font-size: 16px; flex: none; }
+  .screen { flex: 1; overflow-y: auto; padding: 0 14px 90px; scrollbar-width: none; }
+  .screen::-webkit-scrollbar { display: none; }
+
+  /* project switcher */
+  .projects { display: flex; gap: 6px; overflow-x: auto; padding: 0 14px 8px; flex: none; scrollbar-width: none; }
+  .chip { flex: none; border: 1px solid var(--line); background: var(--panel); color: var(--dim); border-radius: 999px; padding: 5px 11px; font-size: 12px; cursor: pointer; }
+  .chip.on { background: var(--ink); color: var(--bg); border-color: var(--ink); font-weight: 600; }
+
+  /* cards */
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 13px; margin: 10px 0; }
+  .card h3 { margin: 0 0 6px; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; color: var(--dim); display: flex; justify-content: space-between; align-items: center; }
+  .brief p { margin: 6px 0; }
+  .src { font-size: 10px; border-radius: 6px; padding: 1px 6px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; }
+  .src.buzz { background: rgba(119,212,210,.14); color: var(--buzz); }
+  .src.vault { background: rgba(230,184,92,.14); color: var(--vault); }
+  .src.uni { background: rgba(179,156,242,.16); color: var(--uni); }
+  .commit { display: flex; gap: 10px; align-items: flex-start; padding: 7px 0; border-top: 1px solid var(--line); cursor: pointer; }
+  .commit:first-of-type { border-top: 0; }
+  .check { width: 18px; height: 18px; border-radius: 6px; border: 2px solid var(--faint); flex: none; margin-top: 1px; }
+  .commit.done .check { background: var(--buzz); border-color: var(--buzz); }
+  .commit.done .ctext { text-decoration: line-through; color: var(--faint); }
+  .ctext small { display: block; color: var(--dim); font-size: 11px; }
+
+  /* stream */
+  .item { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid #1c3140; cursor: pointer; }
+  .item .av { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; font-weight: 700; flex: none; font-size: 14px; }
+  .av.buzz { background: #173b41; color: var(--buzz); } .av.vault { background: #3b3219; color: var(--vault); } .av.uni { background: #2c2545; color: var(--uni); }
+  .item .body { flex: 1; min-width: 0; }
+  .item .meta { display: flex; gap: 6px; align-items: center; font-size: 11px; color: var(--dim); }
+  .item .meta b { color: var(--ink); font-size: 13px; }
+  .item .txt { margin-top: 2px; color: #cfdde4; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .bridge { font-size: 11px; color: var(--dim); margin-top: 4px; }
+  .bridge span { color: var(--vault); } .bridge span.b { color: var(--buzz); }
+  .daysep { font-size: 11px; color: var(--faint); text-transform: uppercase; letter-spacing: .06em; margin: 14px 0 2px; }
+  .filters { display: flex; gap: 6px; margin: 4px 0 6px; }
+
+  /* chat */
+  .msg { display: flex; gap: 8px; margin: 10px 0; }
+  .msg .bubble { background: var(--card); border: 1px solid var(--line); border-radius: 4px 16px 16px 16px; padding: 8px 11px; max-width: 86%; position: relative; }
+  .msg.me { flex-direction: row-reverse; }
+  .msg.me .bubble { background: #173b41; border-color: #22565c; border-radius: 16px 4px 16px 16px; }
+  .msg .who { font-size: 11px; color: var(--dim); margin-bottom: 2px; }
+  .msg .bubble p { margin: 3px 0; }
+  .msg .bubble code { background: #0f1e28; border-radius: 4px; padding: 0 4px; font-size: 12px; }
+  .msg .bubble a { color: var(--buzz); }
+  .msg .bubble ul { margin: 4px 0; padding-left: 18px; }
+  .saved-tag { display: inline-flex; gap: 4px; align-items: center; font-size: 11px; color: var(--vault); margin-top: 5px; cursor: pointer; }
+  .actions { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .act { background: #0f1e28; border: 1px solid var(--line); color: var(--dim); border-radius: 8px; font-size: 11px; padding: 3px 8px; cursor: pointer; }
+  .act:hover { color: var(--ink); }
+  .act.vault { color: var(--vault); border-color: #5b4a22; }
+  .typing { font-size: 12px; color: var(--uni); margin: 6px 0 0 4px; }
+  .typing i { display: inline-block; animation: blink 1.2s infinite; }
+  @keyframes blink { 50% { opacity: .2; } }
+  .context-strip { background: #1a1a10; border: 1px solid #4a3d1b; border-radius: 12px; padding: 8px 10px; font-size: 12px; color: #e9d7a8; display: flex; gap: 8px; align-items: center; margin: 8px 0; cursor: pointer; }
+
+  /* note */
+  .note-title { font-size: 20px; font-weight: 700; margin: 8px 0 2px; }
+  .note-meta { font-size: 11px; color: var(--dim); display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .tag { background: #2a2515; color: var(--vault); border-radius: 6px; padding: 1px 7px; font-size: 11px; }
+  .note-body { margin-top: 10px; color: #d7e3e9; }
+  .note-body h4 { margin: 14px 0 4px; font-size: 13px; color: var(--dim); text-transform: uppercase; letter-spacing: .05em; }
+  .wikilink { color: var(--vault); border-bottom: 1px dashed var(--vault); cursor: pointer; }
+  .backlinks .item { padding: 8px 0; }
+
+  /* search */
+  .searchbox { display: flex; gap: 8px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 9px 12px; margin: 4px 0 8px; }
+  .searchbox input { flex: 1; background: none; border: 0; color: var(--ink); font-size: 15px; outline: none; }
+  .mode { font-size: 11px; color: var(--uni); }
+  .score { font-size: 10px; color: var(--faint); margin-left: auto; font-variant-numeric: tabular-nums; }
+  .why { font-size: 11px; color: var(--uni); margin-top: 3px; }
+  .answer { border-color: #3d3464; background: #1b1830; }
+
+  /* now */
+  .now-row { display: flex; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); }
+  .now-row:first-of-type { border-top: 0; }
+  .pulse { width: 10px; height: 10px; border-radius: 50%; background: var(--uni); margin-top: 5px; flex: none; box-shadow: 0 0 0 0 rgba(179,156,242,.6); animation: pulse 1.6s infinite; }
+  .pulse.idle { background: var(--faint); animation: none; }
+  .pulse.wait { background: var(--vault); animation: none; }
+  @keyframes pulse { 70% { box-shadow: 0 0 0 9px rgba(179,156,242,0); } 100% { box-shadow: 0 0 0 0 rgba(179,156,242,0); } }
+  .bar { height: 4px; background: #0f1e28; border-radius: 3px; margin-top: 5px; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--uni); }
+  .approve { display: flex; gap: 6px; margin-top: 6px; }
+  .btn { border: 0; border-radius: 10px; padding: 7px 12px; font-weight: 700; cursor: pointer; font-size: 12px; }
+  .btn.pri { background: var(--buzz); color: var(--bg); } .btn.sec { background: var(--card); color: var(--ink); border: 1px solid var(--line); }
+  .btn.gold { background: var(--vault); color: #1d1606; }
+
+  /* composer + capture */
+  .composer { position: absolute; left: 0; right: 0; bottom: 64px; padding: 8px 12px; background: linear-gradient(transparent, var(--bg) 30%); display: flex; gap: 8px; align-items: flex-end; }
+  .composer textarea { flex: 1; resize: none; background: var(--card); border: 1px solid var(--line); border-radius: 16px; color: var(--ink); padding: 9px 12px; font: inherit; height: 40px; outline: none; }
+  .route { font-size: 11px; color: var(--dim); position: absolute; left: 16px; top: -10px; }
+  .route b { color: var(--buzz); } .route b.v { color: var(--vault); }
+  .tabs { position: absolute; left: 0; right: 0; bottom: 0; height: 64px; background: var(--panel); border-top: 1px solid var(--line); display: flex; align-items: center; justify-content: space-around; padding-bottom: 6px; }
+  .tab { background: none; border: 0; color: var(--faint); display: flex; flex-direction: column; align-items: center; font-size: 10px; gap: 2px; cursor: pointer; width: 62px; }
+  .tab .ic { font-size: 19px; line-height: 1; }
+  .tab.on { color: var(--ink); }
+  .tab .badge { position: absolute; margin-left: 22px; margin-top: -4px; background: var(--buzz); color: var(--bg); font-size: 9px; font-weight: 800; border-radius: 8px; padding: 0 5px; }
+  .capture-fab { width: 54px; height: 54px; border-radius: 18px; background: var(--vault); color: #1d1606; border: 0; font-size: 22px; margin-top: -22px; box-shadow: 0 6px 20px rgba(230,184,92,.35); cursor: pointer; }
+
+  .sheet-bg { position: absolute; inset: 0; background: rgba(0,0,0,.55); display: none; z-index: 5; }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--panel); border-radius: 22px 22px 0 0; border-top: 1px solid var(--line); padding: 14px 16px 22px; z-index: 6; transform: translateY(105%); transition: transform .22s ease; max-height: 88%; overflow-y: auto; }
+  .sheet.open { transform: none; }
+  .sheet.open ~ .sheet-bg, .sheet-bg.open { display: block; }
+  .grab { width: 40px; height: 4px; background: var(--line); border-radius: 2px; margin: 0 auto 10px; }
+  .sheet h3 { margin: 0 0 4px; }
+  .mic { width: 88px; height: 88px; border-radius: 50%; margin: 16px auto; display: grid; place-items: center; font-size: 34px; background: #3b3219; border: 2px solid var(--vault); cursor: pointer; }
+  .mic.rec { background: var(--vault); animation: pulse2 1.2s infinite; }
+  @keyframes pulse2 { 50% { box-shadow: 0 0 0 14px rgba(230,184,92,.12); } }
+  .wave { display: flex; gap: 3px; justify-content: center; height: 28px; align-items: center; }
+  .wave i { width: 3px; background: var(--vault); border-radius: 2px; height: 6px; transition: height .12s; }
+  .transcript { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px; min-height: 60px; margin: 10px 0; color: #e9d7a8; }
+  .routes { display: grid; gap: 6px; }
+  .route-opt { display: flex; gap: 10px; align-items: center; padding: 9px 10px; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; background: var(--card); }
+  .route-opt.on { border-color: var(--vault); background: #231f12; }
+  .route-opt small { display: block; color: var(--dim); font-size: 11px; }
+  .toast { position: absolute; left: 50%; bottom: 140px; transform: translateX(-50%) translateY(20px); background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 12px; font-weight: 600; font-size: 12px; opacity: 0; transition: .2s; z-index: 10; white-space: nowrap; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateX(-50%); }
+  .empty { color: var(--faint); text-align: center; padding: 30px 0; }
+  .person { display: inline-flex; align-items: center; gap: 5px; background: #173b41; color: var(--buzz); border-radius: 999px; padding: 1px 8px 1px 2px; font-size: 12px; }
+  .person i { width: 16px; height: 16px; border-radius: 50%; background: var(--buzz); color: var(--bg); font-style: normal; font-size: 9px; display: grid; place-items: center; font-weight: 800; }
+</style>
+</head>
+<body>
+
+<div class="notes">
+  <h1>Talk to Uni: next</h1>
+  <p>A clickable sketch. <b>One surface, two substrates.</b> Buzz holds the conversations and Parachute holds what you know. The app stops treating them as separate places.</p>
+  <p class="legend"><span><i class="dot d-buzz"></i>Buzz</span><span><i class="dot d-vault"></i>Vault</span><span><i class="dot d-uni"></i>Uni</span></p>
+  <ul>
+    <li><b>Today</b>: the morning brief, commitments pulled from chats and notes, and what Uni is doing.</li>
+    <li><b>Stream</b>: captures, notes and messages on one timeline. Tap anything.</li>
+    <li>In a chat, <b>“→ Note”</b> turns a message into a vault note that links back to it.</li>
+    <li>In a note, <b>“Talk about this”</b> opens a thread with the note attached as context.</li>
+    <li><b>Search</b> is by meaning across both substrates. Try “why did we pause the house”.</li>
+    <li>The <b>✦ button</b> is voice capture. It is transcribed, filed to the vault, and optionally sent to Uni.</li>
+    <li>The <b>project chips</b> scope everything: channel, notes, people, commitments.</li>
+  </ul>
+  <p>All data is synthetic.</p>
+</div>
+
+<div class="phone" id="phone">
+  <div class="status"><span>9:41</span><span id="conn">● live · vault synced</span></div>
+  <div class="top" id="top"></div>
+  <div class="projects" id="projects"></div>
+  <div class="screen" id="screen"></div>
+  <div id="composer"></div>
+  <nav class="tabs" id="tabs"></nav>
+  <div class="sheet" id="sheet"></div>
+  <div class="sheet-bg" id="sheetbg"></div>
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+// ─── Synthetic data ─────────────────────────────────────────────────────────
+const PROJECTS = [
+  { id: "all", name: "Everything" },
+  { id: "garden", name: "Garden co-op", channel: "#garden" },
+  { id: "book", name: "Field guide", channel: "#field-guide" },
+  { id: "house", name: "House move", channel: "#house" },
+  { id: "uni", name: "Uni itself", channel: "#uni" },
+];
+const PEOPLE = {
+  maya: { name: "Maya", i: "M" }, jonah: { name: "Jonah", i: "J" }, rin: { name: "Rin", i: "R" }, uni: { name: "Uni", i: "✦" }, me: { name: "You", i: "A" },
+};
+let seq = 100;
+const now = Date.parse("2026-09-24T09:41:00");
+const ago = (m) => now - m * 60000;
+
+// One timeline: `kind` is buzz (message), vault (note/capture), uni (agent activity).
+let ITEMS = [
+  { id: "n1", kind: "vault", type: "capture", project: "garden", at: ago(35), title: "Voice capture · walk", text: "Seed library idea: the co-op keeps a shelf of saved seeds, people take two and bring back two. Ask Maya if the shed has room.", tags: ["idea", "garden"], links: ["maya"] },
+  { id: "m1", kind: "buzz", project: "uni", at: ago(52), from: "uni", channel: "#uni", text: "**Morning.** Three things matter today:\n- Jonah is waiting on the chapter 3 outline (you promised it by Friday)\n- The seed order closes at noon\n- Rin asked about the lease, still unanswered (2 days)" },
+  { id: "m2", kind: "buzz", project: "garden", at: ago(80), from: "maya", channel: "#garden", text: "shed has space on the north wall if we clear the old pots. also — are we ordering the heirloom beans this year?" },
+  { id: "n2", kind: "vault", type: "note", project: "book", at: ago(140), title: "Chapter 3: Edges", text: "Hedgerows as infrastructure. The edge is where most of the life is. Open with the robin nest found in the blackthorn.", tags: ["book", "draft"], links: ["jonah"] },
+  { id: "m3", kind: "buzz", project: "book", at: ago(190), from: "jonah", channel: "#field-guide", text: "No rush but I'd love the ch.3 outline before Friday so I can plan illustrations. Anything with hedgerows I can start sketching?" },
+  { id: "u1", kind: "uni", project: "uni", at: ago(210), title: "Uni filed 4 captures", text: "Sorted last night's voice notes into Garden (2), Field guide (1), Inbox (1). One mentions a date, so I added it to commitments." },
+  { id: "m4", kind: "buzz", project: "house", at: ago(60 * 26), from: "rin", channel: "#house", text: "Landlord wants to know by Oct 1 if you're renewing. Can you confirm either way?" },
+  { id: "n3", kind: "vault", type: "note", project: "house", at: ago(60 * 30), title: "Decision: pause the house search", text: "Paused the search until spring. Reasons: interest rates, the book deadline, and wanting one more season with the garden co-op before moving. Revisit in March.", tags: ["decision", "house"], links: ["rin"] },
+  { id: "n4", kind: "vault", type: "person", project: "garden", at: ago(60 * 50), title: "Maya", text: "Runs the co-op shed. Prefers voice notes to text. Birthday Nov 3. Knows everything about beans.", tags: ["person"], links: [] },
+  { id: "m5", kind: "buzz", project: "uni", at: ago(60 * 27), from: "me", channel: "#uni", text: "can you keep an eye on anything that looks like a promise I make in chat and put it on the list?" },
+  { id: "m6", kind: "buzz", project: "uni", at: ago(60 * 27 - 1), from: "uni", channel: "#uni", text: "Yes. I'll watch for “I'll…”, “by Friday”, “let me get back to you”, and add each to **Commitments** with a link back to the message. You can reject any I get wrong." },
+];
+
+let COMMITS = [
+  { id: "c1", text: "Send ch.3 outline to Jonah", due: "Fri", from: "m3", project: "book", done: false },
+  { id: "c2", text: "Seed order (heirloom beans?)", due: "Today 12:00", from: "m2", project: "garden", done: false },
+  { id: "c3", text: "Answer Rin about the lease", due: "Oct 1", from: "m4", project: "house", done: false },
+  { id: "c4", text: "Clear old pots from shed north wall", due: "Sat", from: "n1", project: "garden", done: true },
+];
+
+let NOW = [
+  { state: "run", title: "Drafting ch.3 outline from your notes", detail: "Reading 6 notes tagged #book · 3 min", pct: 64, project: "book" },
+  { state: "wait", title: "Wants approval: reply to Rin", detail: "“Renewing for 6 months, will confirm in writing by Sep 30.”", project: "house", approve: true },
+  { state: "idle", title: "Next: weekly review", detail: "Sunday 18:00 · compiles commitments + open threads", project: "uni" },
+];
+
+// Meaning-search corpus → handcrafted "semantic" hits for the demo queries.
+const SEMANTIC = [
+  { q: /house|move|pause|renew|lease|why/i, hits: [["n3", .91, "decision note with the reasons"], ["m4", .77, "Rin's question depends on this decision"], ["c3", .7, "open commitment"]], answer: "You paused the house search until spring because of <b>rates</b>, the <b>book deadline</b>, and wanting <b>one more season with the co-op</b>. Rin's lease question (due Oct 1) follows from that. Renewing fits the decision." },
+  { q: /bean|seed|garden|shed|maya/i, hits: [["m2", .88, "Maya asked about heirloom beans"], ["n1", .84, "your seed-library capture"], ["n4", .63, "Maya: knows everything about beans"]], answer: "Two open threads meet here: Maya's bean question and your seed-library idea. The order closes at <b>noon today</b>." },
+  { q: /hedge|edge|chapter|jonah|book|outline|illustr/i, hits: [["n2", .9, "chapter 3 draft note"], ["m3", .86, "Jonah is waiting on the outline"], ["u1", .52, "Uni is drafting it now"]], answer: "Jonah needs the ch.3 outline by <b>Friday</b> to plan illustrations. Uni is drafting it from your “Edges” note right now." },
+];
+
+// ─── State ──────────────────────────────────────────────────────────────────
+const S = { tab: "today", project: "all", stack: [], filter: "all", query: "", savedFromMsg: {}, noteContext: null };
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+const $ = (id) => document.getElementById(id);
+const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const md = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/`(.+?)`/g, "<code>$1</code>")
+  .split("\n").reduce((acc, l) => { if (/^- /.test(l)) { acc.list.push(`<li>${l.slice(2)}</li>`); } else { if (acc.list.length) { acc.out.push(`<ul>${acc.list.join("")}</ul>`); acc.list = []; } if (l.trim()) acc.out.push(`<p>${l}</p>`); } return acc; }, { out: [], list: [] });
+const render_md = (s) => { const r = md(s); if (r.list.length) r.out.push(`<ul>${r.list.join("")}</ul>`); return r.out.join(""); };
+const rel = (t) => { const m = Math.round((now - t) / 60000); return m < 60 ? `${m}m` : m < 1440 ? `${Math.round(m / 60)}h` : `${Math.round(m / 1440)}d`; };
+const byId = (id) => ITEMS.find((x) => x.id === id);
+const inProject = (x) => S.project === "all" || x.project === S.project;
+const avatar = (x) => x.kind === "buzz" ? (PEOPLE[x.from]?.i ?? "?") : x.kind === "uni" ? "✦" : ({ capture: "✎", note: "▤", person: "☺" }[x.type] ?? "▤");
+const avClass = (x) => x.kind === "buzz" ? (x.from === "uni" ? "uni" : "buzz") : x.kind;
+function toast(t) { const el = $("toast"); el.textContent = t; el.classList.add("show"); clearTimeout(toast.h); toast.h = setTimeout(() => el.classList.remove("show"), 1800); }
+function go(view) { S.stack.push(view); draw(); $("screen").scrollTop = 0; }
+function back() { S.stack.pop(); draw(); }
+function tab(t) { S.tab = t; S.stack = []; draw(); $("screen").scrollTop = 0; }
+
+// ─── Views ──────────────────────────────────────────────────────────────────
+function viewToday() {
+  const unreadBuzz = ITEMS.filter((x) => x.kind === "buzz" && x.from !== "me" && inProject(x) && now - x.at < 6 * 3600e3).length;
+  const commits = COMMITS.filter(inProject);
+  const now_ = NOW.filter(inProject);
+  return {
+    title: `Thursday <span class="sub">Sep 24 · ${unreadBuzz} new in conversations · ${ITEMS.filter((x) => x.kind === "vault" && now - x.at < 86400e3).length} captures since yesterday</span>`,
+    html: `
+    <div class="card brief"><h3>Morning brief <span class="src uni">Uni</span></h3>
+      ${render_md(byId("m1").text)}
+      <div class="actions"><button class="act" onclick="openChat('#uni')">Reply in #uni</button><button class="act vault" onclick="toast('Brief saved to vault · Journal/2026-09-24')">→ Save to journal</button></div>
+    </div>
+    <div class="card"><h3>Commitments <span style="font-size:10px;text-transform:none;letter-spacing:0;color:var(--faint)">found in chats + notes</span></h3>
+      ${commits.map((c) => `<div class="commit ${c.done ? "done" : ""}" onclick="toggleCommit('${c.id}')"><i class="check"></i><div class="ctext">${esc(c.text)}<small>${c.due} · from <span class="src ${byId(c.from)?.kind}">${byId(c.from)?.kind === "buzz" ? byId(c.from).channel : "vault"}</span> <a style="color:var(--dim)" onclick="event.stopPropagation();openItem('${c.from}')">source ›</a></small></div></div>`).join("") || `<div class="empty">Nothing promised here.</div>`}
+    </div>
+    <div class="card"><h3>Uni right now <a onclick="tab('now')" style="font-size:11px;color:var(--uni);cursor:pointer;text-transform:none">all ›</a></h3>
+      ${now_.slice(0, 2).map(nowRow).join("") || `<div class="empty">Uni is idle here.</div>`}
+    </div>
+    <div class="card"><h3>Resurfaced <span class="src vault">vault</span></h3>
+      <div class="item" onclick="openItem('n3')"><div class="av vault">▤</div><div class="body"><div class="meta"><b>Decision: pause the house search</b></div><div class="txt">Rin's lease question (Oct 1) touches this decision from last month.</div></div></div>
+    </div>`,
+  };
+}
+
+function nowRow(n) {
+  return `<div class="now-row"><i class="pulse ${n.state === "run" ? "" : n.state === "wait" ? "wait" : "idle"}"></i><div style="flex:1">
+    <div><b>${esc(n.title)}</b></div><div style="font-size:12px;color:var(--dim)">${esc(n.detail)}</div>
+    ${n.pct ? `<div class="bar"><i style="width:${n.pct}%"></i></div>` : ""}
+    ${n.approve ? `<div class="approve"><button class="btn pri" onclick="approve()">Send it</button><button class="btn sec" onclick="openChat('#house')">Edit in #house</button></div>` : ""}
+  </div></div>`;
+}
+
+function streamRow(x) {
+  const title = x.kind === "buzz" ? PEOPLE[x.from].name : x.title;
+  const where = x.kind === "buzz" ? `<span class="src buzz">${x.channel}</span>` : x.kind === "vault" ? `<span class="src vault">${x.type}</span>` : `<span class="src uni">activity</span>`;
+  const saved = S.savedFromMsg[x.id];
+  const origin = x.origin ? `<div class="bridge">from <span class="b">${byId(x.origin)?.channel ?? "chat"}</span> message</div>` : "";
+  return `<div class="item" onclick="openItem('${x.id}')"><div class="av ${avClass(x)}">${avatar(x)}</div><div class="body">
+    <div class="meta"><b>${esc(title)}</b>${where}<span style="margin-left:auto">${rel(x.at)}</span></div>
+    <div class="txt">${esc(x.text.replace(/\*\*/g, ""))}</div>
+    ${saved ? `<div class="bridge">saved as note <span>▤ ${esc(byId(saved).title)}</span></div>` : ""}${origin}
+  </div></div>`;
+}
+
+function viewStream() {
+  const items = ITEMS.filter(inProject).filter((x) => S.filter === "all" || x.kind === S.filter).sort((a, b) => b.at - a.at);
+  let lastDay = "";
+  const rows = items.map((x) => {
+    const d = now - x.at < 86400e3 ? "Today" : now - x.at < 2 * 86400e3 ? "Yesterday" : "Earlier";
+    const sep = d !== lastDay ? `<div class="daysep">${d}</div>` : "";
+    lastDay = d;
+    return sep + streamRow(x);
+  }).join("");
+  const f = (k, l) => `<button class="chip ${S.filter === k ? "on" : ""}" onclick="S.filter='${k}';draw()">${l}</button>`;
+  return {
+    title: `Stream <span class="sub">conversations + captures, one timeline</span>`,
+    html: `<div class="filters">${f("all", "All")}${f("buzz", "Chats")}${f("vault", "Vault")}${f("uni", "Uni")}</div>${rows || `<div class="empty">Nothing here yet.</div>`}`,
+  };
+}
+
+function openItem(id) {
+  const x = byId(id);
+  if (!x) { const c = COMMITS.find((c) => c.id === id); if (c) openItem(c.from); return; }
+  if (x.kind === "buzz") openChat(x.channel, id);
+  else go({ type: "note", id });
+}
+
+function openChat(channel, focus) { go({ type: "chat", channel, focus }); }
+
+function viewChat(v) {
+  const msgs = ITEMS.filter((x) => x.kind === "buzz" && x.channel === v.channel).sort((a, b) => a.at - b.at);
+  const proj = PROJECTS.find((p) => p.channel === v.channel);
+  const ctx = S.noteContext && S.noteContext.channel === v.channel ? byId(S.noteContext.note) : null;
+  const related = ITEMS.filter((x) => x.kind === "vault" && x.project === proj?.id).slice(0, 2);
+  return {
+    title: `${v.channel} <span class="sub">${proj?.name ?? ""} · Buzz · 4 members</span>`,
+    back: true,
+    html: `
+    ${ctx ? `<div class="context-strip" onclick="go({type:'note',id:'${ctx.id}'})">▤ <span>Talking about <b>${esc(ctx.title)}</b>. Uni can see this note.</span></div>` : ""}
+    ${!ctx && related.length ? `<div class="context-strip" onclick="go({type:'note',id:'${related[0].id}'})">▤ <span>${related.length} vault notes in this project · <b>${esc(related[0].title)}</b>${related[1] ? " +1" : ""}</span></div>` : ""}
+    ${msgs.map((m) => `<div class="msg ${m.from === "me" ? "me" : ""}" id="msg-${m.id}"><div class="item" style="border:0;padding:0;cursor:default"><div class="av ${m.from === "uni" ? "uni" : m.from === "me" ? "buzz" : "buzz"}">${PEOPLE[m.from].i}</div></div>
+      <div class="bubble" ${v.focus === m.id ? 'style="outline:2px solid var(--buzz)"' : ""}><div class="who">${PEOPLE[m.from].name} · ${rel(m.at)}</div>${render_md(m.text)}
+        ${S.savedFromMsg[m.id] ? `<div class="saved-tag" onclick="go({type:'note',id:'${S.savedFromMsg[m.id]}'})">▤ in vault: ${esc(byId(S.savedFromMsg[m.id]).title)} ›</div>` : ""}
+        <div class="actions"><button class="act vault" onclick="msgToNote('${m.id}')">→ Note</button><button class="act" onclick="msgToCommit('${m.id}')">→ Commitment</button><button class="act" onclick="toast('Thread opened')">Thread</button></div>
+      </div></div>`).join("")}
+    ${S.typing === v.channel ? `<div class="typing">✦ Uni is thinking<i>…</i> reading 3 notes</div>` : ""}`,
+    composer: v.channel,
+  };
+}
+
+function viewNote(v) {
+  const x = byId(v.id);
+  const origin = x.origin ? byId(x.origin) : null;
+  const mentionedIn = ITEMS.filter((m) => m.kind === "buzz" && (m.project === x.project) && m.id !== x.origin).slice(0, 3);
+  const people = (x.links || []).map((p) => `<span class="person"><i>${PEOPLE[p].i}</i>${PEOPLE[p].name}</span>`).join(" ");
+  const body = esc(x.text).replace(/Maya|Jonah|Rin/g, (n) => `<span class="wikilink" onclick="toast('Opening person: ${n}')">${n}</span>`);
+  return {
+    title: `<span class="src vault">${x.type}</span>`,
+    back: true,
+    html: `
+    <div class="note-title">${esc(x.title)}</div>
+    <div class="note-meta">${x.tags.map((t) => `<span class="tag">#${t}</span>`).join("")} <span>· ${rel(x.at)} ago</span> ${people}</div>
+    <div class="note-body"><p>${body}</p>
+      ${x.type === "capture" ? `<h4>Uni's read</h4><p style="color:var(--uni)">Idea + a question for Maya. Filed to Garden. Want me to ask her in #garden?</p>` : ""}
+      ${origin ? `<h4>Came from</h4>${streamRow(origin)}` : ""}
+    </div>
+    <div class="actions" style="margin:12px 0"><button class="btn gold" onclick="talkAbout('${x.id}')">✦ Talk about this</button><button class="btn sec" onclick="toast('Shared to ${PROJECTS.find((p) => p.id === x.project)?.channel ?? "#uni"}')">Share to channel</button></div>
+    <div class="card backlinks"><h3>Conversations nearby <span class="src buzz">buzz</span></h3>${mentionedIn.map(streamRow).join("") || `<div class="empty">No conversations yet.</div>`}</div>`,
+  };
+}
+
+function viewSearch() {
+  const q = S.query.trim();
+  let body = "";
+  if (!q) {
+    body = `<div style="color:var(--dim);font-size:13px">Search by meaning across <span class="src buzz">conversations</span> and <span class="src vault">vault</span>. Try:</div>
+      ${["why did we pause the house", "what's happening with beans", "what does Jonah need"].map((s) => `<div class="item" onclick="S.query='${s}';draw()"><div class="av uni">✦</div><div class="body"><div class="txt">${s}</div></div></div>`).join("")}`;
+  } else {
+    const hit = SEMANTIC.find((s) => s.q.test(q));
+    if (!hit) body = `<div class="empty">Nothing close in meaning. (The demo knows the house, beans and the book.)</div>`;
+    else body = `<div class="card answer"><h3>Uni's answer <span class="src uni">from 3 sources</span></h3><p style="margin:4px 0">${hit.answer}</p></div>
+      ${hit.hits.map(([id, sc, why]) => { const x = byId(id) || { ...ITEMS.find((i) => i.id === COMMITS.find((c) => c.id === id)?.from), title: COMMITS.find((c) => c.id === id)?.text, kind: "vault", type: "commitment", text: "Commitment · " + COMMITS.find((c) => c.id === id)?.due }; return streamRow({ ...x, id }).replace('</div></div></div>', `<div class="why">↳ ${why}</div></div></div></div>`).replace(/<span style="margin-left:auto">[^<]*<\/span>/, `<span class="score">${sc.toFixed(2)}</span>`); }).join("")}`;
+  }
+  return {
+    title: `Search <span class="sub">meaning, not keywords</span>`,
+    html: `<div class="searchbox">⌕<input id="q" placeholder="Ask anything you've said or saved…" value="${esc(S.query)}" oninput="S.query=this.value;drawScreenOnly()" /><span class="mode">semantic</span></div><div id="results">${body}</div>`,
+  };
+}
+
+function viewNow() {
+  return {
+    title: `Uni, now <span class="sub">what the agent is doing on your behalf</span>`,
+    html: `<div class="card">${NOW.filter(inProject).map(nowRow).join("") || `<div class="empty">Idle.</div>`}</div>
+    <div class="card"><h3>Done today</h3>
+      <div class="now-row"><i class="pulse idle"></i><div>Filed 4 captures <small style="color:var(--dim)">· 06:10</small></div></div>
+      <div class="now-row"><i class="pulse idle"></i><div>Wrote the morning brief <small style="color:var(--dim)">· 08:49</small></div></div>
+      <div class="now-row"><i class="pulse idle"></i><div>Found 2 commitments in #field-guide <small style="color:var(--dim)">· 09:02</small></div></div></div>
+    <div class="card"><h3>Standing instructions</h3><div style="color:var(--dim);font-size:13px">“Watch chats for promises I make and add them to commitments.” <a style="color:var(--buzz)" onclick="openChat('#uni','m5')">source ›</a></div></div>`,
+  };
+}
+
+// ─── Actions ────────────────────────────────────────────────────────────────
+function msgToNote(id) {
+  const m = byId(id);
+  if (S.savedFromMsg[id]) { go({ type: "note", id: S.savedFromMsg[id] }); return; }
+  const note = { id: "n" + (++seq), kind: "vault", type: "note", project: m.project, at: now, title: m.text.replace(/\*\*/g, "").split(/[.\n?!]/)[0].slice(0, 48), text: m.text.replace(/\*\*/g, ""), tags: [m.project, "from-chat"], links: m.from !== "me" && m.from !== "uni" ? [m.from] : [], origin: id };
+  ITEMS.push(note);
+  S.savedFromMsg[id] = note.id;
+  toast("Saved to vault ▤ linked both ways");
+  draw();
+}
+function msgToCommit(id) {
+  const m = byId(id);
+  COMMITS.unshift({ id: "c" + (++seq), text: m.text.replace(/\*\*/g, "").slice(0, 50), due: "this week", from: id, project: m.project, done: false });
+  toast("Added to commitments");
+}
+function talkAbout(noteId) {
+  const x = byId(noteId);
+  const ch = PROJECTS.find((p) => p.id === x.project)?.channel ?? "#uni";
+  S.noteContext = { note: noteId, channel: ch };
+  openChat(ch);
+  setTimeout(() => { $("draft") && ($("draft").value = `About “${x.title}”: `, $("draft").focus()); }, 30);
+}
+function toggleCommit(id) { const c = COMMITS.find((c) => c.id === id); c.done = !c.done; draw(); }
+function approve() { NOW = NOW.filter((n) => !n.approve); ITEMS.push({ id: "m" + (++seq), kind: "buzz", project: "house", at: now, from: "uni", channel: "#house", text: "(sent on your behalf) Renewing for 6 months, will confirm in writing by Sep 30." }); COMMITS.find((c) => c.id === "c3").done = true; toast("Sent to #house · commitment closed"); draw(); }
+function send(channel) {
+  const el = $("draft"); const text = el.value.trim(); if (!text) return;
+  const proj = PROJECTS.find((p) => p.channel === channel)?.id ?? "uni";
+  ITEMS.push({ id: "m" + (++seq), kind: "buzz", project: proj, at: now, from: "me", channel, text });
+  el.value = ""; S.typing = channel; draw();
+  const sc = $("screen"); sc.scrollTop = sc.scrollHeight;
+  setTimeout(() => {
+    S.typing = null;
+    const ctx = S.noteContext && S.noteContext.channel === channel ? byId(S.noteContext.note) : null;
+    const reply = ctx ? `Looking at **${ctx.title}**. Here's a way to move it forward:\n- the smallest next step is one message\n- I can draft it in \`${channel}\` for you to approve\nWant that?` :
+      /promise|will|by friday|i'll/i.test(text) ? "Noted as a **commitment** with a link back here. I'll bring it up in tomorrow's brief." :
+      "Got it. I checked the vault and found **2 related notes**, pinned above. Want me to save this exchange as a note?";
+    ITEMS.push({ id: "m" + (++seq), kind: "buzz", project: proj, at: now, from: "uni", channel, text: reply });
+    draw(); sc.scrollTop = sc.scrollHeight;
+  }, 1400);
+}
+
+// ─── Capture sheet (voice → vault, optionally → Uni) ────────────────────────
+const SAMPLE_TRANSCRIPT = "Remind me to bring the ladder to the co-op Saturday, and ask Jonah whether the hedgerow sketches can be watercolour.";
+let cap = { rec: false, text: "", route: "vault+uni", timer: null };
+function openCapture() {
+  cap = { rec: false, text: "", route: "vault+uni", timer: null };
+  drawCapture(); $("sheet").classList.add("open"); $("sheetbg").classList.add("open");
+}
+function closeSheet() { $("sheet").classList.remove("open"); $("sheetbg").classList.remove("open"); clearInterval(cap.timer); }
+function drawCapture() {
+  const r = (k, t, s) => `<div class="route-opt ${cap.route === k ? "on" : ""}" onclick="cap.route='${k}';drawCapture()"><span>${cap.route === k ? "◉" : "○"}</span><div>${t}<small>${s}</small></div></div>`;
+  $("sheet").innerHTML = `<div class="grab"></div><h3>Capture</h3><div style="color:var(--dim);font-size:12px">Speak. It goes to the vault first, always. Uni files it.</div>
+    <div class="mic ${cap.rec ? "rec" : ""}" onclick="toggleRec()">${cap.rec ? "■" : "🎙"}</div>
+    <div class="wave">${Array.from({ length: 24 }, () => "<i></i>").join("")}</div>
+    <div class="transcript">${cap.text ? esc(cap.text) : `<span style="color:var(--faint)">${cap.rec ? "listening…" : "tap the mic (demo: fills a sample)"}</span>`}</div>
+    <div class="routes">
+      ${r("vault", "Vault only", "Saved as a capture; Uni files it later")}
+      ${r("vault+uni", "Vault + ask Uni", "Saved, and Uni acts on it now (commitments, messages)")}
+      ${r("chat", "Send as a message", "To " + (PROJECTS.find((p) => p.id === S.project)?.channel ?? "#uni") + " (still saved)")}
+    </div>
+    <div class="approve" style="margin-top:12px"><button class="btn gold" ${cap.text ? "" : "disabled style='opacity:.4'"} onclick="saveCapture()">Save</button><button class="btn sec" onclick="closeSheet()">Cancel</button></div>`;
+}
+function toggleRec() {
+  cap.rec = !cap.rec;
+  if (cap.rec) {
+    let i = 0; const words = SAMPLE_TRANSCRIPT.split(" ");
+    cap.timer = setInterval(() => {
+      document.querySelectorAll(".wave i").forEach((w) => (w.style.height = 4 + Math.random() * 24 + "px"));
+      if (i < words.length && Math.random() > .35) { cap.text = words.slice(0, ++i).join(" "); $("sheet").querySelector(".transcript").textContent = cap.text; }
+      if (i >= words.length) { toggleRec(); }
+    }, 110);
+  } else { clearInterval(cap.timer); cap.text = SAMPLE_TRANSCRIPT; }
+  drawCapture();
+}
+function saveCapture() {
+  const project = S.project === "all" ? "garden" : S.project;
+  const n = { id: "n" + (++seq), kind: "vault", type: "capture", project, at: now, title: "Voice capture", text: cap.text, tags: ["capture"], links: ["jonah"] };
+  ITEMS.push(n);
+  if (cap.route !== "vault") {
+    COMMITS.unshift({ id: "c" + (++seq), text: "Bring ladder to the co-op", due: "Sat", from: n.id, project: "garden", done: false });
+    ITEMS.push({ id: "u" + (++seq), kind: "uni", project: "uni", at: now, title: "Uni acted on a capture", text: "Added “Bring ladder” to commitments (Sat). Drafted a question for Jonah in #field-guide, waiting for your approval." });
+    NOW.unshift({ state: "wait", title: "Wants approval: ask Jonah", detail: "“Could the hedgerow sketches be watercolour?”", project: "book", approve: false });
+  }
+  if (cap.route === "chat") ITEMS.push({ id: "m" + (++seq), kind: "buzz", project, at: now, from: "me", channel: PROJECTS.find((p) => p.id === project).channel, text: cap.text });
+  closeSheet(); toast(cap.route === "vault" ? "Captured to vault" : "Captured · Uni is on it"); draw();
+}
+
+// ─── Chrome ─────────────────────────────────────────────────────────────────
+function current() {
+  const top = S.stack[S.stack.length - 1];
+  if (top?.type === "chat") return viewChat(top);
+  if (top?.type === "note") return viewNote(top);
+  return { today: viewToday, stream: viewStream, search: viewSearch, now: viewNow }[S.tab]();
+}
+function drawScreenOnly() {
+  const v = current();
+  const tmp = document.createElement("div"); tmp.innerHTML = v.html;
+  $("results").innerHTML = tmp.querySelector("#results").innerHTML;
+}
+function draw() {
+  const v = current();
+  $("top").innerHTML = `${v.back ? `<button class="iconbtn" onclick="back()">‹</button>` : ""}<h2>${v.title}</h2>${!v.back ? `<button class="iconbtn" title="Projects" onclick="toast('Channels: #garden #field-guide #house #uni')">#</button>` : ""}`;
+  $("projects").style.display = v.back ? "none" : "flex";
+  $("projects").innerHTML = PROJECTS.map((p) => `<button class="chip ${S.project === p.id ? "on" : ""}" onclick="S.project='${p.id}';draw()">${p.name}</button>`).join("");
+  $("screen").innerHTML = v.html;
+  $("composer").innerHTML = v.composer ? `<div class="composer"><span class="route">to <b>${v.composer}</b> · saved threads land in <b class="v">vault</b></span><textarea id="draft" placeholder="Message ${v.composer}…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send('${v.composer}')}"></textarea><button class="btn pri" onclick="send('${v.composer}')">Send</button></div>` : "";
+  const newCount = ITEMS.filter((x) => x.kind === "buzz" && x.from !== "me" && now - x.at < 6 * 3600e3).length;
+  const t = (k, ic, l, badge) => `<button class="tab ${S.tab === k && !S.stack.length ? "on" : ""}" onclick="tab('${k}')"><span class="ic">${ic}</span>${badge ? `<span class="badge">${badge}</span>` : ""}${l}</button>`;
+  $("tabs").innerHTML = t("today", "☀", "Today") + t("stream", "≋", "Stream", newCount) + `<button class="capture-fab" onclick="openCapture()" title="Capture">✦</button>` + t("search", "⌕", "Search") + t("now", "◔", "Uni");
+  if (S.tab === "search" && !S.stack.length) { const q = $("q"); if (q && document.activeElement !== q) { q.focus(); q.setSelectionRange(q.value.length, q.value.length); } }
+  if (v.composer) { const f = S.stack[S.stack.length - 1].focus; const sc = $("screen"); if (f && $("msg-" + f)) $("msg-" + f).scrollIntoView({ block: "center" }); else sc.scrollTop = sc.scrollHeight; }
+}
+$("sheetbg").onclick = closeSheet;
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") { if ($("sheet").classList.contains("open")) closeSheet(); else if (S.stack.length) back(); } });
+draw();
+</script>
+</body>
+</html>
