@@ -270,16 +270,16 @@ $("#askForm").onsubmit=e=>{e.preventDefault();const q=$("#q").value.trim();if(q)
 let askRun=0;
 async function ask(q){const run=++askRun;show("askv");$("#q").blur();
  const qv=vec(q);const qw=words(q).filter(w=>!STOP.has(w));
- const kw=notes.filter(n=>qw.some(w=>words(n.b+" "+n.t).includes(w)));
+ const kw=notes.filter(n=>qw.length&&qw.every(w=>words(n.b+" "+n.t).includes(w)));
  let res=notes.filter(n=>kind(n)!=="Archive").map(n=>{let s=cos(qv,vec(n.b+" "+n.t));if(kind(n)==="Captures"&&s>0)s+=.04;if(n._new&&s>0)s+=.05;return{n,s:Math.min(.99,s)}}).filter(o=>o.s>.3).sort((a,b)=>b.s-a.s).slice(0,4);
  $("#answerBox").innerHTML=`<div class="answer"><div class="who">UNI · reading ${notes.length} notes</div><div id="ans" class="cursor"></div></div>
- <div class="cmp"><div><span class="meta">Keyword search</span><b>${kw.length}</b>notes contain your exact words</div><div><span class="meta">Meaning search</span><b>${res.length}</b>notes are about what you asked</div></div>
+ <div class="cmp"><div><span class="meta">Keyword search</span><b>${kw.length}</b>notes contain all your words</div><div><span class="meta">Meaning search</span><b>${res.length}</b>notes are about what you asked</div></div>
  <h4 style="font-size:12px;letter-spacing:.12em;color:var(--mute);text-transform:uppercase;margin:16px 0 4px">Sources</h4>
  ${res.map((o,i)=>card(o.n,`<span class="score">[${i+1}] ${Math.round(o.s*100)}% match</span>`)).join("")}`;
  document.querySelectorAll("#answerBox .note").forEach((el,i)=>el.insertAdjacentHTML("beforeend",`<div class="bar"><i style="width:${Math.round(res[i].s*100)}%"></i></div>`));
  let text;
  if(!res.length)text="I couldn't find anything about that yet. Capture a thought about it and ask again: it'll turn up here.";
- else{const g=res.map((o,i)=>o.n.g+` [${i+1}]`);
+ else{const g=res.map((o,i)=>(i?o.n.g.charAt(0).toLowerCase()+o.n.g.slice(1):o.n.g)+` [${i+1}]`);
   text=(res.length>1?"Here's the thread I see. ":"One note speaks to this. ")+g[0].charAt(0).toUpperCase()+g[0].slice(1)+"."+(g[1]?" Related: "+g[1]+".":"")+(g[2]?" Also, "+g[2]+".":"");
   if(qv.worry&&qv.garden)text+=" The good news: it resolved. The later harvest note reads as relief.";
   if(kw.length<res.length)text+=` (Keyword search alone would have found ${kw.length}.)`}
