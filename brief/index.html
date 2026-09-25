@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Morning brief · prototype</title>
+<meta name="theme-color" content="#14110f">
+<style>
+:root{--bg:#14110f;--card:#1f1a17;--card2:#27211d;--line:#352d28;--ink:#f3ece4;--mute:#a89b8f;--acc:#f0a35e;--acc2:#8fc7b1;--pur:#b9a3f0;--red:#ef7d6b}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15.5px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input{font:inherit;color:inherit}
+.hero{background:linear-gradient(180deg,#3b2618 0%,#241913 55%,var(--bg) 100%);padding:16px 20px 26px;position:relative;overflow:hidden}
+.sun{position:absolute;right:-40px;top:-40px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,#ffcf8a 0,#f0a35e55 40%,transparent 70%);animation:rise 3s ease-out}
+@keyframes rise{from{transform:translateY(60px);opacity:0}}
+.wrap{max-width:620px;margin:0 auto;position:relative}
+.bar{display:flex;align-items:center;font:600 13px ui-monospace,monospace;letter-spacing:.25em;color:var(--acc)}
+.bar a{margin-left:auto;color:#cdb9a7;text-decoration:none;letter-spacing:0;font:13px system-ui}
+.date{margin-top:22px;color:#d8c1ab;font-size:14px}
+h1{font:600 34px/1.1 Georgia,serif;margin:4px 0 10px}
+.lede{color:#e6d4c3;max-width:44ch}
+.stats{display:flex;gap:8px;margin-top:16px}
+.stat{flex:1;background:rgba(20,17,15,.45);border:1px solid rgba(240,163,94,.2);border-radius:14px;padding:9px 10px;text-align:center}
+.stat b{display:block;font:600 22px Georgia,serif}.stat span{font-size:12px;color:#cdb9a7}
+main{max-width:620px;margin:0 auto;padding:4px 16px 120px}
+h3{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);margin:26px 4px 8px;display:flex;align-items:center;gap:8px}
+h3 .n{background:var(--card2);border-radius:99px;padding:0 8px;font-size:11.5px;letter-spacing:0}
+.item{position:relative;background:var(--card);border:1px solid var(--line);border-radius:16px;margin:8px 0;overflow:hidden;touch-action:pan-y;transition:opacity .35s,max-height .4s,margin .4s,transform .35s;max-height:400px}
+.item.gone{opacity:0;max-height:0;margin:0;transform:translateX(40px);border-width:0}
+.inner{display:flex;gap:12px;padding:13px 14px;background:var(--card);position:relative;z-index:1;transition:transform .2s}
+.chk{flex:none;width:26px;height:26px;border-radius:50%;border:2px solid #5a4a3e;background:none;cursor:pointer;display:grid;place-items:center;margin-top:1px;transition:.2s}
+.chk:hover{border-color:var(--acc2)}
+.item.done .chk{background:var(--acc2);border-color:var(--acc2);color:#10201a}
+.item.done .tt{text-decoration:line-through;color:var(--mute)}
+.body{flex:1;min-width:0}
+.tt{font-weight:600}
+.sub{font-size:13px;color:var(--mute);margin-top:2px}
+.sub q{font-style:italic;color:#c9b8a8}
+.due{flex:none;font:600 12px ui-monospace,monospace;padding:3px 8px;border-radius:8px;height:fit-content;white-space:nowrap}
+.due.over{background:#3a1f1a;color:var(--red)}.due.today{background:#3a2a1b;color:var(--acc)}.due.soon{background:var(--card2);color:var(--mute)}.due.snz{background:#24203a;color:var(--pur)}
+.acts{display:none;gap:6px;padding:0 14px 12px 52px;flex-wrap:wrap}
+.item.open .acts{display:flex}
+.a{border:1px solid var(--line);background:var(--card2);border-radius:10px;padding:6px 11px;font-size:13px;cursor:pointer}
+.a:hover{border-color:var(--acc)}
+.a.p{background:var(--acc);color:#1a120b;border-color:var(--acc);font-weight:600}
+.under{position:absolute;inset:0;display:flex;justify-content:space-between;align-items:center;padding:0 20px;font-weight:700;font-size:14px}
+.under .l{color:var(--acc2)}.under .r{color:var(--pur)}
+.night{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:6px 14px}
+.nl{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14.5px}
+.nl:last-child{border:0}
+.nl .tm{flex:none;font:12px ui-monospace,monospace;color:var(--mute);width:42px;padding-top:2px}
+.nl .ic{flex:none;width:22px;text-align:center}
+.nl small{display:block;color:var(--mute);font-size:12.5px}
+.nl .undo{margin-left:auto;flex:none;font-size:12px;color:var(--acc);cursor:pointer;background:none;border:0;padding:0}
+.dec{background:linear-gradient(180deg,#221c2e,#1c1822);border:1px solid #3b3350;border-radius:16px;padding:14px;margin:8px 0}
+.dec .q{font-weight:600}
+.dec .ctx{font-size:13px;color:#bdb2d6;margin:4px 0 10px}
+.dec .row{display:flex;gap:6px;flex-wrap:wrap}
+.dec.answered{opacity:.6}
+.dec .ans{font-size:13.5px;color:var(--acc2);margin-top:8px}
+.said{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(transparent,var(--bg) 35%);padding:24px 16px 18px;z-index:5}
+.said form{max-width:620px;margin:0 auto;display:flex;gap:8px}
+.said input{flex:1;background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;outline:none}
+.said input:focus{border-color:var(--acc)}
+.said button{background:var(--acc);color:#1a120b;border:0;border-radius:14px;padding:0 16px;font-weight:700;cursor:pointer}
+.toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%) translateY(20px);background:#2b221c;border:1px solid var(--acc);padding:10px 14px;border-radius:12px;opacity:0;transition:.3s;z-index:20;font-size:14px;display:flex;gap:12px;align-items:center;max-width:92vw;pointer-events:none}
+.toast.on{opacity:1;transform:translateX(-50%);pointer-events:auto}
+.toast button{background:none;border:0;color:var(--acc);font-weight:700;cursor:pointer}
+.streak{display:flex;gap:4px;margin-top:10px}.streak i{flex:1;height:22px;border-radius:5px;background:var(--card2);position:relative}
+.streak i b{position:absolute;bottom:0;left:0;right:0;background:var(--acc2);border-radius:5px;transition:height .6s}
+.streak-l{display:flex;justify-content:space-between;font-size:11px;color:var(--mute);margin-top:4px}
+.empty{color:var(--mute);font-size:14px;text-align:center;padding:14px;border:1px dashed var(--line);border-radius:14px}
+.new{animation:glow 2s}
+@keyframes glow{0%{box-shadow:0 0 0 0 rgba(240,163,94,.7)}100%{box-shadow:0 0 0 14px rgba(240,163,94,0)}}
+.confetti{position:fixed;pointer-events:none;z-index:30;font-size:16px;animation:fly 900ms ease-out forwards}
+@keyframes fly{to{transform:translate(var(--x),var(--y)) rotate(200deg);opacity:0}}
+.reset{display:block;margin:30px auto 0;background:none;border:0;color:var(--mute);font-size:12.5px;text-decoration:underline;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="hero"><div class="sun"></div><div class="wrap">
+ <div class="bar">U·N·I<a href="../">← all prototypes</a></div>
+ <div class="date" id="date"></div>
+ <h1 id="greet">Good morning, Sam.</h1>
+ <div class="lede" id="lede"></div>
+ <div class="stats"><div class="stat"><b id="sDue">0</b><span>due soon</span></div><div class="stat"><b id="sNight">0</b><span>done overnight</span></div><div class="stat"><b id="sDec">0</b><span>need you</span></div></div>
+</div></div>
+<main>
+ <h3>Needs a decision <span class="n" id="nDec"></span></h3>
+ <div id="decs"></div>
+
+ <h3>What you said you'd do <span class="n" id="nCom"></span></h3>
+ <div id="coms"></div>
+
+ <h3>While you slept <span class="n" id="nNight"></span></h3>
+ <div class="night" id="night"></div>
+
+ <h3>This week</h3>
+ <div class="night" style="padding:12px 14px"><div style="font-size:14px">Kept <b id="kept">0</b> of <b id="tot">0</b> commitments on time</div><div class="streak" id="streak"></div><div class="streak-l"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div></div>
+ <button class="reset" id="reset">Reset demo</button>
+</main>
+<div class="said"><form id="sayF"><input id="say" placeholder="Tell Uni something you'll do…" value="Email Priya about insurance by Friday" autocomplete="off"><button>Add</button></form></div>
+<div class="toast" id="toast"><span id="tmsg"></span><button id="tundo">Undo</button></div>
+
+<script>
+// All synthetic. No real people or projects.
+const today=new Date();today.setHours(0,0,0,0);
+const D=n=>{const d=new Date(today);d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
+const SEED={
+ coms:[
+  {id:1,t:"Send the volunteer sign-up sheet to the choir",said:"Said in choir planning, 2 weeks ago",quote:"I'll draft the sign-up sheet",due:D(-1),src:"Meetings/…/choir-planning"},
+  {id:2,t:"Reply to Jordan about the park permit",said:"Said in chat, Monday",quote:"let me get back to you tomorrow",due:D(0),src:"Buzz #choir",draft:true},
+  {id:3,t:"Post the tool library flyer on the street board",said:"Voice memo, Saturday",quote:"I'll put up a flyer this weekend",due:D(0),src:"Captures/…/09-20"},
+  {id:4,t:"Grant proposal to the neighborhood fund",said:"Said to yourself, Sep 12",quote:"proposal goes in by the 30th, no excuses",due:D(4),src:"Captures/…/09-12"},
+  {id:5,t:"Return Ana's ladder",said:"Captured last week",quote:"need to give Ana her ladder back",due:D(6),src:"Captures/…/09-17"}
+ ],
+ night:[
+  {tm:"23:12",ic:"🎙️",t:"Transcribed 2 voice memos",s:"Filed to Captures/, linked to Backyard garden"},
+  {tm:"01:40",ic:"📄",t:"Imported the Thursday call with Priya",s:"Found 1 new commitment for you: \"email Priya about insurance\" (confirm below?)",undo:false},
+  {tm:"03:05",ic:"✍️",t:"Drafted a reply to Jordan",s:"Waiting in your drafts; nothing sent",undo:true},
+  {tm:"04:30",ic:"🧭",t:"Updated Projects/Tool library",s:"Open day moved to Oct 4 per Priya's call",undo:true},
+  {tm:"05:55",ic:"🔗",t:"Linked 14 older notes by meaning",s:"Mostly choir ↔ garden. You keep coming back to 'outdoor rehearsals'",undo:true}
+ ],
+ decs:[
+  {id:"d1",q:"Send the drafted reply to Jordan?",ctx:"\"Thanks Jordan! Sunday 10am works. Can you confirm the permit covers amplified sound?\"",opts:[["Send it","Sent to Jordan in #choir."],["Let me edit","Opened in drafts."],["Not yet","Okay, I'll ask again tomorrow."]]},
+  {id:"d2",q:"Priya mentioned insurance on Thursday's call. Track it as a commitment?",ctx:"\"…Sam, can you email me about the insurance question by Friday?\"",opts:[["Yes, by Friday","Added: email Priya about insurance, due Friday."],["It's hers, not mine","Got it. I'll note it on her page instead."]]}
+ ],
+ week:[1,1,0.5,1,0,0,0]
+};
+let S=JSON.parse(localStorage.getItem("brief_v1")||"null")||JSON.parse(JSON.stringify(SEED));
+S.done=S.done||[];S.snz=S.snz||{};S.ans=S.ans||{};S.undone=S.undone||[];
+const save=()=>localStorage.setItem("brief_v1",JSON.stringify(S));
+const $=s=>document.querySelector(s);
+const days=d=>Math.round((new Date(d)-today)/864e5);
+const fmt=d=>{const n=days(d);if(n<0)return[n===-1?"yesterday":-n+"d late","over"];if(n===0)return["today","today"];if(n===1)return["tomorrow","soon"];return[new Date(d).toLocaleDateString(undefined,{weekday:"short"})+" · "+n+"d","soon"]};
+
+function hero(){const h=new Date().getHours();$("#greet").textContent=(h<12?"Good morning":h<18?"Good afternoon":"Good evening")+", Sam.";
+ $("#date").textContent=new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
+ const open=S.coms.filter(c=>!S.done.includes(c.id));const due=open.filter(c=>!S.snz[c.id]&&days(c.due)<=3);
+ const over=due.filter(c=>days(c.due)<0).length;const dec=S.decs.filter(d=>!S.ans[d.id]).length;
+ $("#sDue").textContent=due.length;$("#sNight").textContent=S.night.filter((n,i)=>!S.undone.includes(i)).length;$("#sDec").textContent=dec;
+ $("#lede").textContent=!open.length?"You're clear. Nothing you promised is outstanding. Go outside.":
+  over?`One thing slipped from yesterday, and ${due.length-over} ${due.length-over===1?"is":"are"} due soon. I did ${S.night.length} things overnight; ${dec?dec+" need"+(dec===1?"s":"")+" your yes or no.":"nothing needs you."}`:
+  `${due.length} thing${due.length===1?"":"s"} due soon. ${dec?dec+" decision"+(dec===1?"":"s")+" waiting on you.":"No decisions waiting."} The rest can wait.`}
+
+function renderComs(){const open=S.coms.filter(c=>!S.done.includes(c.id)).sort((a,b)=>(S.snz[a.id]||a.due).localeCompare(S.snz[b.id]||b.due));
+ $("#nCom").textContent=open.length;
+ $("#coms").innerHTML=open.map(c=>{const sn=S.snz[c.id];const [lab,cls]=sn?["snoozed → "+fmt(sn)[0],"snz"]:fmt(c.due);
+  return `<div class="item ${c._new?"new":""}" data-id="${c.id}"><div class="under"><span class="l">✓ Done</span><span class="r">Snooze ⏾</span></div>
+  <div class="inner"><button class="chk" data-act="done" aria-label="mark done"></button><div class="body"><div class="tt">${c.t}</div><div class="sub">${c.said}: <q>${c.quote}</q></div></div><span class="due ${cls}">${lab}</span></div>
+  <div class="acts"><button class="a p" data-act="done">Done</button><button class="a" data-act="snz" data-d="1">Tomorrow</button><button class="a" data-act="snz" data-d="3">In 3 days</button><button class="a" data-act="snz" data-d="7">Next week</button>${c.draft?'<button class="a" data-act="draft">See Uni\'s draft</button>':""}<button class="a" data-act="drop">Let it go</button></div></div>`}).join("")||`<div class="empty">Nothing outstanding. That's a rare and lovely thing.</div>`;
+ S.coms.forEach(c=>delete c._new);bindSwipe()}
+
+function renderNight(){$("#nNight").textContent=S.night.length;$("#night").innerHTML=S.night.map((n,i)=>`<div class="nl" style="${S.undone.includes(i)?"opacity:.4;text-decoration:line-through":""}"><span class="tm">${n.tm}</span><span class="ic">${n.ic}</span><div><div>${n.t}</div><small>${n.s}</small></div>${n.undo&&!S.undone.includes(i)?`<button class="undo" data-u="${i}">undo</button>`:""}</div>`).join("")}
+
+function renderDecs(){const open=S.decs;$("#nDec").textContent=open.filter(d=>!S.ans[d.id]).length;
+ $("#decs").innerHTML=open.map(d=>`<div class="dec ${S.ans[d.id]?"answered":""}"><div class="q">${d.q}</div><div class="ctx">${d.ctx}</div>${S.ans[d.id]?`<div class="ans">✓ ${S.ans[d.id]}</div>`:`<div class="row">${d.opts.map((o,i)=>`<button class="a ${i?"":"p"}" data-dec="${d.id}" data-o="${i}">${o[0]}</button>`).join("")}</div>`}</div>`).join("")}
+
+function renderWeek(){const k=S.week.reduce((a,b)=>a+(b>=1?1:0),0)+S.done.length;$("#kept").textContent=k;$("#tot").textContent=k+S.coms.filter(c=>!S.done.includes(c.id)&&days(c.due)<0).length+1;
+ const w=[...S.week];const dow=(new Date().getDay()+6)%7;w[dow]=Math.min(1,S.done.length/3);$("#streak").innerHTML=w.map(v=>`<i><b style="height:${v*100}%"></b></i>`).join("")}
+function all(){hero();renderDecs();renderComs();renderNight();renderWeek();save()}
+
+// toast with undo
+let undoFn=null;function toast(m,u){$("#tmsg").textContent=m;undoFn=u;$("#tundo").style.display=u?"":"none";const t=$("#toast");t.classList.add("on");clearTimeout(t._);t._=setTimeout(()=>t.classList.remove("on"),3500)}
+$("#tundo").onclick=()=>{undoFn&&undoFn();$("#toast").classList.remove("on")};
+function burst(x,y){for(let i=0;i<12;i++){const e=document.createElement("div");e.className="confetti";e.textContent=["✦","•","✧","◆"][i%4];e.style.left=x+"px";e.style.top=y+"px";e.style.color=["#8fc7b1","#f0a35e","#b9a3f0"][i%3];e.style.setProperty("--x",(Math.random()-.5)*160+"px");e.style.setProperty("--y",(Math.random()-.8)*140+"px");document.body.appendChild(e);setTimeout(()=>e.remove(),950)}}
+
+function act(id,a,d,el){const c=S.coms.find(x=>x.id==id);const item=document.querySelector(`.item[data-id="${id}"]`);
+ if(a==="done"){item.classList.add("done");const r=item.querySelector(".chk").getBoundingClientRect();burst(r.left+13,r.top+13);item.querySelector(".chk").textContent="✓";
+  setTimeout(()=>{item.classList.add("gone");setTimeout(()=>{S.done.push(c.id);all()},380)},450);toast("Done. Nice.",()=>{S.done=S.done.filter(x=>x!==c.id);all()})}
+ else if(a==="snz"){const prev=S.snz[id];item.classList.add("gone");setTimeout(()=>{S.snz[id]=D(+d);all()},350);toast(`Snoozed to ${fmt(D(+d))[0]}. I'll bring it back then.`,()=>{prev?S.snz[id]=prev:delete S.snz[id];all()})}
+ else if(a==="drop"){item.classList.add("gone");setTimeout(()=>{S.done.push(c.id);all()},350);toast("Let go. I noted that you chose to, so it won't nag.",()=>{S.done=S.done.filter(x=>x!==c.id);all()})}
+ else if(a==="draft"){toast("Draft: “Thanks Jordan! Sunday 10am works…” (see decisions above)")}}
+
+document.addEventListener("click",e=>{
+ const b=e.target.closest("[data-act]");if(b){e.stopPropagation();const id=b.closest(".item").dataset.id;act(id,b.dataset.act,b.dataset.d,b);return}
+ const it=e.target.closest(".item");if(it&&!it._swiped){it.classList.toggle("open");return}
+ const dc=e.target.closest("[data-dec]");if(dc){const d=S.decs.find(x=>x.id===dc.dataset.dec);const o=d.opts[+dc.dataset.o];S.ans[d.id]=o[1];
+  if(d.id==="d2"&&dc.dataset.o==="0"){addCom("Email Priya about insurance","From Thursday's call","can you email me about the insurance question by Friday?",friday())}
+  if(d.id==="d1"&&dc.dataset.o==="0"){S.done.includes(2)||S.done.push(2)}
+  all();toast(o[1]);return}
+ const u=e.target.closest("[data-u]");if(u){S.undone.push(+u.dataset.u);all();toast("Undone. I've reverted that change.")}
+});
+
+// swipe: right = done, left = snooze 1 day
+function bindSwipe(){document.querySelectorAll(".item").forEach(it=>{const inn=it.querySelector(".inner");let x0=null,dx=0;
+ it.onpointerdown=e=>{if(e.target.closest("button"))return;x0=e.clientX;dx=0;it._swiped=false;inn.style.transition="none"};
+ it.onpointermove=e=>{if(x0===null)return;dx=e.clientX-x0;if(Math.abs(dx)>8){it._swiped=true;inn.style.transform=`translateX(${dx}px)`}};
+ const end=()=>{if(x0===null)return;inn.style.transition="";x0=null;if(dx>90)act(it.dataset.id,"done");else if(dx<-90)act(it.dataset.id,"snz",1);inn.style.transform="";setTimeout(()=>it._swiped=false,50)};
+ it.onpointerup=end;it.onpointerleave=end;it.onpointercancel=end})}
+
+// natural-language add
+function friday(){const d=new Date(today);d.setDate(d.getDate()+((5-d.getDay()+7)%7||7));return d.toISOString().slice(0,10)}
+function parseDue(s){s=s.toLowerCase();const w=["sunday","monday","tuesday","wednesday","thursday","friday","saturday"];
+ if(/today|tonight/.test(s))return D(0);if(/tomorrow/.test(s))return D(1);if(/next week/.test(s))return D(7);
+ for(let i=0;i<7;i++)if(s.includes(w[i])){const d=new Date(today);d.setDate(d.getDate()+((i-d.getDay()+7)%7||7));return d.toISOString().slice(0,10)}
+ const m=s.match(/in (\d+) days?/);if(m)return D(+m[1]);return D(3)}
+function addCom(t,said,quote,due){if(S.coms.some(c=>c.t.toLowerCase()===t.toLowerCase()&&!S.done.includes(c.id)))return;S.coms.push({id:Date.now(),t,said,quote,due,_new:true})}
+$("#sayF").onsubmit=e=>{e.preventDefault();const v=$("#say").value.trim();if(!v)return;
+ const due=parseDue(v);const t=v.replace(/\b(by|on|before)?\s*(today|tonight|tomorrow|next week|in \d+ days?|(this |next )?(sunday|monday|tuesday|wednesday|thursday|friday|saturday))\b/ig,"").replace(/^(i'll|i will|remind me to|i need to)\s+/i,"").trim();
+ addCom(t.charAt(0).toUpperCase()+t.slice(1),"Said just now",v,due);$("#say").value="";all();toast(`Got it. Due ${fmt(due)[0]}. It's in Uni/Commitments.`)};
+$("#reset").onclick=()=>{localStorage.removeItem("brief_v1");location.reload()};
+all();
+</script>
+</body>
+</html>

@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Set up Uni · prototype</title>
+<meta name="theme-color" content="#14110f">
+<style>
+:root{--bg:#14110f;--card:#1f1a17;--card2:#27211d;--line:#352d28;--ink:#f3ece4;--mute:#a89b8f;--acc:#f0a35e;--acc2:#8fc7b1;--pur:#b9a3f0}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100%}
+body{background:radial-gradient(900px 500px at 50% -20%,#3a2618 0,transparent 65%),var(--bg);min-height:100vh}
+button,input,textarea{font:inherit;color:inherit}
+.wrap{max-width:560px;margin:0 auto;padding:18px 20px 120px;min-height:100vh;display:flex;flex-direction:column}
+.top{display:flex;align-items:center;gap:10px;font:600 13px ui-monospace,monospace;letter-spacing:.25em;color:var(--acc)}
+.top a{margin-left:auto;color:var(--mute);text-decoration:none;letter-spacing:0;font:13px system-ui}
+.prog{display:flex;gap:5px;margin:16px 0 26px}.prog i{flex:1;height:4px;border-radius:4px;background:var(--line);transition:background .4s}.prog i.on{background:var(--acc)}
+.step{display:none;animation:in .35s cubic-bezier(.2,.8,.2,1)}.step.on{display:block}
+@keyframes in{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
+.kick{font:600 12px ui-monospace,monospace;letter-spacing:.18em;color:var(--mute);text-transform:uppercase}
+h1{font:600 32px/1.15 Georgia,serif;margin:6px 0 10px}
+p.l{color:#cfc3b7;margin:0 0 20px}
+.opt{display:flex;gap:14px;align-items:flex-start;width:100%;text-align:left;background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:14px 16px;margin:10px 0;cursor:pointer;transition:border-color .15s,background .15s}
+.opt:hover{border-color:#5a4a3e}.opt.on{border-color:var(--acc);background:#271d16}
+.opt .ic{flex:none;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--card2);font-size:20px}
+.opt b{display:block}.opt small{color:var(--mute);font-size:13.5px;line-height:1.4;display:block}
+.opt .price{margin-left:auto;font:600 13px ui-monospace,monospace;color:var(--acc);white-space:nowrap}
+.tog{margin-left:auto;flex:none;width:44px;height:26px;border-radius:99px;background:var(--line);position:relative;transition:.2s;margin-top:6px}
+.tog::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s}
+.opt.on .tog{background:var(--acc)}.opt.on .tog::after{left:21px}
+input.t,textarea.t{width:100%;background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;outline:none;margin:6px 0 12px}
+input.t:focus,textarea.t:focus{border-color:var(--acc)}
+label.s{font-size:13px;color:var(--mute)}
+.foot{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(transparent,var(--bg) 30%);padding:26px 20px 22px}
+.foot .in{max-width:560px;margin:0 auto;display:flex;gap:10px}
+.btn{flex:1;background:var(--acc);color:#1a120b;border:0;border-radius:14px;padding:15px;font-weight:700;cursor:pointer;transition:opacity .2s}
+.btn:disabled{opacity:.35;cursor:default}
+.btn.ghost{flex:none;background:var(--card);color:var(--ink);border:1px solid var(--line);padding:15px 18px}
+.term{background:#0d0b0a;border:1px solid var(--line);border-radius:14px;padding:14px;font:12.5px/1.6 ui-monospace,monospace;color:#cfc3b7;min-height:170px;white-space:pre-wrap;overflow:hidden}
+.term .ok{color:var(--acc2)}.term .c{color:var(--acc)}
+.tree{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;font:13.5px/1.9 ui-monospace,monospace;margin:14px 0}
+.tree span{color:var(--mute);font-family:system-ui;font-size:12.5px;margin-left:6px}
+.tree div{opacity:0;transform:translateX(-6px);transition:.35s}.tree div.on{opacity:1;transform:none}
+.drop{border:1.5px dashed var(--line);border-radius:14px;padding:14px;text-align:center;color:var(--mute);cursor:pointer;margin:10px 0;font-size:14px}
+.drop.on{border-color:var(--acc2);color:var(--acc2);border-style:solid}
+.meter{height:6px;background:var(--line);border-radius:6px;overflow:hidden;margin-top:8px}.meter i{display:block;height:100%;width:0;background:var(--acc2);transition:width .2s}
+.mic{width:86px;height:86px;border-radius:50%;border:0;background:var(--acc);color:#1a120b;font-size:30px;display:block;margin:10px auto;cursor:pointer;position:relative}
+.mic.rec{animation:pulse 1.2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(240,163,94,.6)}100%{box-shadow:0 0 0 26px rgba(240,163,94,0)}}
+.wave{display:flex;gap:3px;justify-content:center;align-items:center;height:36px}.wave i{width:4px;background:var(--acc);border-radius:3px;height:4px;transition:height .1s}
+.filed{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-top:14px;font-size:14px;display:none}
+.filed.on{display:block;animation:in .35s}
+.filed code{font-size:12.5px;color:var(--acc)}
+.chat{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.b{max-width:86%;padding:10px 14px;border-radius:18px;font-size:15px;animation:in .3s}
+.b.u{align-self:flex-start;background:var(--card);border:1px solid var(--line);border-bottom-left-radius:6px}
+.b.me{align-self:flex-end;background:#3a2a1b;border-bottom-right-radius:6px}
+.b.typing{color:var(--mute)}
+.ava{width:74px;height:74px;border-radius:24px;margin:0 auto 10px;display:grid;place-items:center;font:700 26px Georgia,serif;color:#1a120b;background:conic-gradient(from 200deg,var(--acc),var(--pur),var(--acc2),var(--acc));animation:spin 12s linear infinite}
+@keyframes spin{to{filter:hue-rotate(360deg)}}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.pill{padding:7px 12px;border-radius:99px;background:var(--card);border:1.5px solid var(--line);cursor:pointer;font-size:14px}
+.pill.on{border-color:var(--acc);background:#271d16}
+.priv{background:#17201d;border:1px solid #2c4039;border-radius:14px;padding:12px 14px;font-size:14px;color:#cfe3da;margin:14px 0}
+.center{text-align:center}
+.sum{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px 14px;margin-top:12px}
+.sum div{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}.sum div:last-child{border:0}
+.sum span{color:var(--mute)}
+</style>
+</head>
+<body>
+<div class="wrap">
+ <div class="top">U·N·I<a href="../">← all prototypes</a></div>
+ <div class="prog" id="prog"></div>
+
+ <!-- 0 welcome -->
+ <section class="step on" data-s="0">
+  <div class="kick">Welcome</div>
+  <h1>Uni is a second mind that's yours.</h1>
+  <p class="l">u·n·i means <i>you and I</i>. You talk, write and record. Uni remembers, connects the dots, and holds you to what you said you'd do. It's three open parts working together:</p>
+  <div class="opt" style="cursor:default"><div class="ic">🪂</div><div><b>A vault</b><small>Your memory. Plain notes you own and can export any time.</small></div></div>
+  <div class="opt" style="cursor:default"><div class="ic">✦</div><div><b>An agent</b><small>Reads the vault, does the work, writes back what it learns.</small></div></div>
+  <div class="opt" style="cursor:default"><div class="ic">💬</div><div><b>Channels</b><small>Where you talk to it: the app, chat, email, voice.</small></div></div>
+  <label class="s" style="display:block;margin-top:18px">What should Uni call you?</label>
+  <input class="t" id="name" placeholder="Your first name" value="Sam" autocomplete="off">
+ </section>
+
+ <!-- 1 where -->
+ <section class="step" data-s="1">
+  <div class="kick">Step 1 · Where it lives</div>
+  <h1>Where should your Uni run?</h1>
+  <p class="l">Same software either way. You can move later: the vault goes with you.</p>
+  <button class="opt on" data-host="self"><div class="ic">🖥️</div><div><b>On my own computer</b><small>An old laptop or a small box at home. Your words never leave it. One command to install.</small></div><span class="price">free</span></button>
+  <button class="opt" data-host="hosted"><div class="ic">☁️</div><div><b>Hosted by Unforced</b><small>We run it for you, encrypted, with backups. Nothing to maintain.</small></div><span class="price">$12/mo</span></button>
+  <div id="hostDetail"></div>
+ </section>
+
+ <!-- 2 vault -->
+ <section class="step" data-s="2">
+  <div class="kick">Step 2 · Your vault</div>
+  <h1>Make a home for your memory.</h1>
+  <p class="l">Six folders. Simple enough that you'll always know where something is.</p>
+  <div class="tree" id="tree">
+   <div>📁 Captures/<span>your raw words, never rewritten</span></div>
+   <div>📁 Meetings/<span>transcripts from calls</span></div>
+   <div>📁 People/<span>who matters and why</span></div>
+   <div>📁 Projects/<span>what you're working on</span></div>
+   <div>📁 Uni/<span>how your agent runs, editable</span></div>
+   <div>📁 Archive/<span>nothing is ever deleted</span></div>
+  </div>
+  <label class="s">Bring what you already have (optional)</label>
+  <div class="drop" data-imp="Tana export" data-n="1,204">⬆ Tana / Roam export</div>
+  <div class="drop" data-imp="Obsidian folder" data-n="638">⬆ Obsidian or Markdown folder</div>
+  <div class="drop" data-imp="Voice memos" data-n="87">⬆ Voice memos (we'll transcribe them)</div>
+  <div id="impStatus"></div>
+  <div class="priv">🔒 Meaning search runs on a small model inside your vault. Your notes are never sent anywhere to be indexed.</div>
+ </section>
+
+ <!-- 3 channels -->
+ <section class="step" data-s="3">
+  <div class="kick">Step 3 · Channels</div>
+  <h1>Where do you want to talk to Uni?</h1>
+  <p class="l">Pick as many as you like. You can add more later.</p>
+  <button class="opt on" data-ch="app"><div class="ic">📱</div><div><b>Talk to Uni app</b><small>Voice and text, on your phone. Works offline, syncs later.</small></div><span class="tog"></span></button>
+  <button class="opt on" data-ch="brief"><div class="ic">☀️</div><div><b>Morning brief</b><small>A short note each morning: what's due, what changed overnight.</small></div><span class="tog"></span></button>
+  <button class="opt" data-ch="chat"><div class="ic">💬</div><div><b>Group chat</b><small>Invite Uni into channels with people you work with. It only sees what you share there.</small></div><span class="tog"></span></button>
+  <button class="opt" data-ch="email"><div class="ic">✉️</div><div><b>Email</b><small>Forward things to your Uni address to file or act on.</small></div><span class="tog"></span></button>
+  <button class="opt" data-ch="meet"><div class="ic">🎙️</div><div><b>Meeting recorder</b><small>Pull in transcripts from your call recorder automatically.</small></div><span class="tog"></span></button>
+  <div id="briefTime" style="margin-top:8px"><label class="s">Morning brief at</label><div class="row" id="times"></div></div>
+ </section>
+
+ <!-- 4 capture -->
+ <section class="step" data-s="4">
+  <div class="kick">Step 4 · First capture</div>
+  <h1>Tell Uni something on your mind.</h1>
+  <p class="l">Anything. A worry, a plan, a half-idea. Hold to talk, or type.</p>
+  <button class="mic" id="mic">🎙</button>
+  <div class="wave" id="wave"></div>
+  <textarea class="t" id="cap" rows="3" placeholder="…or type here"></textarea>
+  <div class="filed" id="filed"></div>
+ </section>
+
+ <!-- 5 meet -->
+ <section class="step" data-s="5">
+  <div class="kick">Step 5 · Meet your agent</div>
+  <div class="ava" id="ava">U</div>
+  <h1 class="center" id="meetH">Say hello.</h1>
+  <div class="chat" id="chat"></div>
+  <div class="row" id="replies" style="justify-content:flex-end;margin-top:14px"></div>
+ </section>
+
+ <!-- 6 done -->
+ <section class="step" data-s="6">
+  <div class="kick">You're set</div>
+  <h1 id="doneH">Uni is running.</h1>
+  <p class="l">Here's what you set up. Everything is editable later in <code>Uni/</code> inside your vault, because the agent's instructions are just notes.</p>
+  <div class="sum" id="sum"></div>
+  <div class="priv">Tomorrow at <b id="tmr">7:30</b> you'll get your first brief. The more you capture, the more Uni can connect.</div>
+  <button class="btn" style="width:100%;margin-top:6px" onclick="location.href='../brief/'">Preview a morning brief →</button>
+ </section>
+</div>
+<div class="foot"><div class="in"><button class="btn ghost" id="back">←</button><button class="btn" id="next">Get started</button></div></div>
+
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const N=7;let s=0;const st={host:"self",ch:new Set(["app","brief"]),time:"7:30",imp:[],cap:"",nm:"Sam"};
+$("#prog").innerHTML="<i></i>".repeat(N-1);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const LABEL=["Get started","Continue","Create my vault","Continue","Save capture","Continue","Done"];
+function go(n){s=Math.max(0,Math.min(N-1,n));$$(".step").forEach(e=>e.classList.toggle("on",+e.dataset.s===s));
+ $$("#prog i").forEach((e,i)=>e.classList.toggle("on",i<s));$("#back").style.display=s?"":"none";$("#next").textContent=LABEL[s];$("#next").disabled=false;
+ window.scrollTo({top:0,behavior:"smooth"});enter[s]&&enter[s]()}
+$("#back").onclick=()=>go(s-1);
+$("#next").onclick=async()=>{if(leave[s]){const ok=await leave[s]();if(ok===false)return}if(s<N-1)go(s+1)};
+
+// 1 host
+$$("[data-host]").forEach(b=>b.onclick=()=>{st.host=b.dataset.host;$$("[data-host]").forEach(x=>x.classList.toggle("on",x===b));hostDetail()});
+function hostDetail(){$("#hostDetail").innerHTML=st.host==="self"?
+ `<div class="term" id="term"><span class="c">$</span> curl -fsSL get.uni.example | sh</div>`:
+ `<label class="s">Pick an address for your Uni</label><input class="t" id="sub" value="${st.nm.toLowerCase()}"><div class="s" style="color:var(--mute);font-size:13px;margin-top:-6px">→ <b id="subv">${st.nm.toLowerCase()}</b>.uni.example</div>`;
+ const sub=$("#sub");if(sub)sub.oninput=()=>$("#subv").textContent=sub.value.replace(/[^a-z0-9-]/gi,"").toLowerCase()||"you"}
+const enter={};const leave={};
+leave[0]=()=>{st.nm=($("#name").value.trim()||"friend");};
+enter[1]=hostDetail;
+leave[1]=async()=>{if(st.host!=="self")return;const t=$("#term");if(t.dataset.done)return;$("#next").disabled=true;
+ const lines=["→ checking this machine… <span class='ok'>8 GB RAM, 120 GB free ✓</span>","→ installing vault… <span class='ok'>✓</span>","→ installing agent… <span class='ok'>✓</span>","→ downloading local search model (130 MB)… <span class='ok'>✓</span>","→ starting services… <span class='ok'>✓</span>","","<span class='ok'>Uni is running at http://uni.local</span>"];
+ for(const l of lines){await sleep(420);t.innerHTML+="\n"+l}t.dataset.done=1;await sleep(600)};
+// 2 vault
+enter[2]=async()=>{const d=$$("#tree div");d.forEach(x=>x.classList.remove("on"));for(const x of d){await sleep(180);x.classList.add("on")}};
+$$("[data-imp]").forEach(b=>b.onclick=async()=>{if(b.classList.contains("on"))return;b.classList.add("on");const id="m"+Math.random().toString(36).slice(2,7);
+ $("#impStatus").insertAdjacentHTML("beforeend",`<div style="font-size:13px;color:var(--mute);margin:8px 0">${b.dataset.imp}: <span id="${id}t">reading…</span><div class="meter"><i id="${id}"></i></div></div>`);
+ const n=parseInt(b.dataset.n.replace(",",""));for(let p=0;p<=100;p+=4){$("#"+id).style.width=p+"%";$("#"+id+"t").textContent=`${Math.round(n*p/100).toLocaleString()} of ${n.toLocaleString()} → Captures/, originals kept`;await sleep(40)}
+ $("#"+id+"t").innerHTML=`<span style="color:var(--acc2)">${n.toLocaleString()} notes imported with their original dates ✓</span>`;st.imp.push(`${b.dataset.imp} (${b.dataset.n})`);b.textContent="✓ "+b.dataset.imp})
+// 3 channels
+$$("[data-ch]").forEach(b=>b.onclick=()=>{const c=b.dataset.ch;st.ch.has(c)?st.ch.delete(c):st.ch.add(c);b.classList.toggle("on",st.ch.has(c));$("#briefTime").style.display=st.ch.has("brief")?"":"none"});
+$("#times").innerHTML=["6:30","7:30","8:30","9:30"].map(t=>`<span class="pill ${t===st.time?"on":""}" data-t="${t}">${t}</span>`).join("");
+$("#times").onclick=e=>{const p=e.target.closest("[data-t]");if(!p)return;st.time=p.dataset.t;$$("[data-t]").forEach(x=>x.classList.toggle("on",x===p))};
+// 4 capture
+$("#wave").innerHTML="<i></i>".repeat(24);
+const SPOKEN="I keep meaning to start a tool library for the street. I'll put up a flyer this weekend. Honestly a bit nervous nobody will come.";
+let recT=null;
+async function record(){const m=$("#mic");if(m.classList.contains("rec"))return;m.classList.add("rec");$("#cap").value="";
+ const w=$$("#wave i");recT=setInterval(()=>w.forEach(i=>i.style.height=(4+Math.random()*30)+"px"),90);
+ for(const word of SPOKEN.split(" ")){$("#cap").value+=(($("#cap").value?" ":""))+word;await sleep(110)}
+ clearInterval(recT);w.forEach(i=>i.style.height="4px");m.classList.remove("rec")}
+$("#mic").onclick=record;
+enter[4]=()=>{$("#filed").classList.remove("on");$("#cap").dataset.saved=""};
+leave[4]=async()=>{const v=$("#cap").value.trim();if(!v){$("#cap").focus();$("#cap").placeholder="Say or type anything first ↑";return false}
+ if($("#cap").dataset.saved)return;st.cap=v;$("#next").disabled=true;const now=new Date(),p=x=>String(x).padStart(2,"0");
+ const path=`Captures/${now.getFullYear()}/${p(now.getMonth()+1)}-${p(now.getDate())}/${p(now.getHours())}-${p(now.getMinutes())}`;
+ const commit=v.match(/(i'll|i will|i need to|i'm going to|going to)\s+([^.!?]+)/i);
+ const f=$("#filed");f.innerHTML=`Saved to <code>${path}</code>`;f.classList.add("on");await sleep(700);
+ f.innerHTML+=`<br>Tagged <code>capture</code>, <code>voice</code>`;await sleep(700);
+ if(commit){f.innerHTML+=`<br>Noticed a commitment: <b>“${commit[2].trim()}”</b> → added to <code>Uni/Commitments</code>`;st.commit=commit[2].trim();await sleep(900)}
+ if(/nervous|worried|anxious|scared/i.test(v)){f.innerHTML+=`<br>Noted a feeling, so you can find it by meaning later.`;await sleep(700)}
+ $("#cap").dataset.saved=1;$("#next").disabled=false;$("#next").textContent="Meet Uni →";return false};
+// 5 meet
+let met=false;
+enter[5]=async()=>{if(met)return;met=true;$("#meetH").textContent=`Hi ${st.nm}.`;$("#next").disabled=true;
+ const c=st.commit?`You said you'd ${st.commit}. I've written that down. Want me to nudge you about it?`:`I've saved your first capture. From here on I'll connect new things to it.`;
+ await say(`I'm Uni. I just read your first note.`);await say(c);
+ if(/nervous|worried/i.test(st.cap))await say(`And you mentioned feeling nervous. That's normal for a first go. Want me to remember who on your street might help?`);
+ replies([["Yes, nudge me",`Done. I'll bring it up ${st.ch.has("brief")?"in your "+st.time+" brief":"the day before"}.`],["What can you do?","I remember everything you capture, find it again by meaning, draft things for you, and keep a list of what you've promised. I won't act for you without asking first."],["Where's my data?",st.host==="self"?"On this computer, in plain notes. You can open or export them any time.":"On your hosted Uni, encrypted. Export it whenever you like and move it home."]])};
+async function say(t){const b=document.createElement("div");b.className="b u typing";b.textContent="…";$("#chat").appendChild(b);await sleep(700+t.length*8);b.classList.remove("typing");b.textContent=t}
+function replies(opts){$("#replies").innerHTML="";opts.forEach(([q,a])=>{const p=document.createElement("span");p.className="pill";p.textContent=q;p.onclick=async()=>{p.remove();const m=document.createElement("div");m.className="b me";m.textContent=q;$("#chat").appendChild(m);await say(a);$("#next").disabled=false;$("#next").textContent="Finish"};$("#replies").appendChild(p)})}
+// 6 done
+enter[6]=()=>{$("#doneH").textContent=`${st.nm}, your Uni is running.`;$("#tmr").textContent=st.time;
+ const L={app:"App",brief:"Morning brief",chat:"Group chat",email:"Email",meet:"Meeting recorder"};
+ $("#sum").innerHTML=[["Runs",st.host==="self"?"On your computer":"Hosted by Unforced"],["Vault","6 folders"+(st.imp.length?" + "+st.imp.length+" import"+(st.imp.length>1?"s":""):"")],["Channels",[...st.ch].map(c=>L[c]).join(", ")||"none yet"],["First capture","saved"],["Commitments",st.commit?"1 being tracked":"none yet"]].map(([a,b])=>`<div><span>${a}</span><b>${b}</b></div>`).join("");
+ $("#next").textContent="Start over";$("#next").onclick=()=>location.reload()};
+go(0);
+</script>
+</body>
+</html>

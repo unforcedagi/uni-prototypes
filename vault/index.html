@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Uni vault · prototype</title>
+<meta name="theme-color" content="#14110f">
+<style>
+:root{--bg:#14110f;--card:#1f1a17;--card2:#27211d;--line:#352d28;--ink:#f3ece4;--mute:#a89b8f;--acc:#f0a35e;--acc2:#8fc7b1;--pur:#b9a3f0;--red:#ef7d6b}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input,textarea{font:inherit;color:inherit}
+header{position:sticky;top:0;z-index:5;background:rgba(20,17,15,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:12px 16px 0}
+.top{display:flex;align-items:center;gap:10px;max-width:880px;margin:0 auto}
+.brand{font:600 13px ui-monospace,monospace;letter-spacing:.25em;color:var(--acc)}
+.brand small{color:var(--mute);letter-spacing:0;font-weight:400;margin-left:6px}
+.back{margin-left:auto;color:var(--mute);text-decoration:none;font-size:13px}
+.ask{max-width:880px;margin:10px auto 0;display:flex;gap:8px}
+.ask input{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 14px;outline:none}
+.ask input:focus{border-color:var(--acc)}
+.btn{background:var(--acc);color:#1a120b;border:0;border-radius:12px;padding:10px 14px;font-weight:600;cursor:pointer}
+.btn.ghost{background:var(--card2);color:var(--ink);border:1px solid var(--line)}
+.tabs{max-width:880px;margin:10px auto 0;display:flex;gap:4px}
+.tab{flex:1;background:none;border:0;border-bottom:2px solid transparent;padding:8px 0 10px;color:var(--mute);cursor:pointer;font-weight:600}
+.tab.on{color:var(--ink);border-color:var(--acc)}
+main{max-width:880px;margin:0 auto;padding:14px 16px 120px}
+.view{display:none}.view.on{display:block;animation:fade .25s}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
+.folders{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none}
+.folders::-webkit-scrollbar{display:none}
+.fold{flex:none;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;cursor:pointer;min-width:112px;text-align:left}
+.fold.on{border-color:var(--acc);background:#2a1f17}
+.fold b{display:block;font-size:14px}.fold span{font-size:12px;color:var(--mute)}
+.fdesc{color:var(--mute);font-size:13px;margin:10px 2px 6px}
+.note{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:8px 0;cursor:pointer;transition:border-color .15s}
+.note:hover{border-color:#5a4a3e}
+.note .p{font:12px ui-monospace,monospace;color:var(--mute)}
+.note .t{font-weight:600;margin:2px 0}
+.note .x{color:#d6cabe;font-size:14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.tag{font-size:11.5px;padding:1px 8px;border-radius:99px;background:#2d2621;color:var(--mute)}
+.tag.capture{background:#3a2a1b;color:var(--acc)}.tag.meeting{background:#1d2f2a;color:var(--acc2)}.tag.person{background:#2a2540;color:var(--pur)}.tag.project{background:#33261f;color:#e8b98f}
+.new{animation:glow 2.4s}
+@keyframes glow{0%{box-shadow:0 0 0 0 rgba(240,163,94,.8);border-color:var(--acc)}100%{box-shadow:0 0 0 14px rgba(240,163,94,0)}}
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:.2s;z-index:10}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-height:86vh;overflow:auto;background:var(--card);border-radius:22px 22px 0 0;border-top:1px solid var(--line);padding:10px 20px 40px;transform:translateY(105%);transition:transform .28s cubic-bezier(.2,.8,.2,1);z-index:11;max-width:880px;margin:0 auto}
+.sheet.on{transform:none}
+.grab{width:44px;height:5px;background:var(--line);border-radius:9px;margin:4px auto 12px}
+.sheet h2{font:600 22px/1.2 Georgia,serif;margin:4px 0}
+.sheet .body{white-space:pre-wrap;color:#e8dfd5;margin:14px 0;font-size:15.5px}
+.sheet h4{margin:18px 0 6px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+.chip{display:inline-block;margin:3px 4px 3px 0;padding:5px 10px;border-radius:10px;background:var(--card2);border:1px solid var(--line);cursor:pointer;font-size:13.5px}
+.chip:hover{border-color:var(--acc)}
+.meta{font:12px ui-monospace,monospace;color:var(--mute)}
+.sacred{display:inline-block;margin-top:8px;font-size:12px;color:var(--acc);border:1px solid #5b3d23;border-radius:8px;padding:2px 8px}
+/* capture */
+.fab{position:fixed;right:18px;bottom:22px;z-index:6;background:var(--acc);color:#1a120b;border:0;border-radius:99px;padding:14px 20px;font-weight:700;box-shadow:0 10px 30px rgba(240,163,94,.3);cursor:pointer}
+.cap textarea{width:100%;min-height:110px;background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:12px;outline:none;resize:vertical}
+.samples{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 12px}
+.pipe{margin-top:14px}
+.step{display:flex;gap:12px;align-items:flex-start;padding:8px 0;opacity:.25;transition:opacity .3s}
+.step.on{opacity:1}
+.dot{flex:none;width:26px;height:26px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:13px}
+.step.on .dot{border-color:var(--acc);background:#3a2a1b}
+.step.done .dot{background:var(--acc);color:#1a120b;border-color:var(--acc)}
+.step b{display:block}.step small{color:var(--mute)}
+/* ask */
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 14px}
+.answer{background:linear-gradient(180deg,#261d17,#1f1a17);border:1px solid #4a3627;border-radius:16px;padding:16px;margin-bottom:14px}
+.answer .who{font:600 12px ui-monospace,monospace;color:var(--acc);letter-spacing:.15em;margin-bottom:6px}
+.cite{display:inline-grid;place-items:center;min-width:18px;height:18px;font-size:11px;border-radius:6px;background:var(--acc);color:#1a120b;font-weight:700;cursor:pointer;margin:0 2px;vertical-align:1px}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 4px}
+.cmp div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;font-size:13px}
+.cmp b{display:block;font-size:22px}
+.score{float:right;font:12px ui-monospace,monospace;color:var(--acc2)}
+.bar{height:3px;background:var(--line);border-radius:3px;margin-top:8px;overflow:hidden}.bar i{display:block;height:100%;background:var(--acc2)}
+.cursor::after{content:"▍";color:var(--acc);animation:blink 1s infinite}
+@keyframes blink{50%{opacity:0}}
+canvas{width:100%;height:62vh;background:var(--card);border:1px solid var(--line);border-radius:16px;touch-action:none}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--mute);margin:8px 2px}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);background:#2b221c;border:1px solid var(--acc);padding:10px 16px;border-radius:12px;opacity:0;transition:.3s;z-index:20;font-size:14px;max-width:90vw}
+.toast.on{opacity:1;transform:translateX(-50%)}
+.empty{color:var(--mute);text-align:center;padding:30px}
+</style>
+</head>
+<body>
+<header>
+  <div class="top"><div class="brand">UNI<small>vault · Sam's (synthetic)</small></div><a class="back" href="../">← all prototypes</a></div>
+  <form class="ask" id="askForm"><input id="q" placeholder="Ask the vault anything…" autocomplete="off"><button class="btn">Ask</button></form>
+  <div class="tabs"><button class="tab on" data-v="browse">Browse</button><button class="tab" data-v="map">Map</button><button class="tab" data-v="askv">Ask</button></div>
+</header>
+<main>
+  <section class="view on" id="browse">
+    <div class="folders" id="folders"></div>
+    <div class="fdesc" id="fdesc"></div>
+    <div id="list"></div>
+  </section>
+  <section class="view" id="map">
+    <canvas id="cv"></canvas>
+    <div class="legend"><span><i style="background:var(--acc)"></i>Captures</span><span><i style="background:var(--acc2)"></i>Meetings</span><span><i style="background:var(--pur)"></i>People</span><span><i style="background:#e8b98f"></i>Projects</span><span><i style="background:#8a8f99"></i>Uni</span></div>
+    <p class="fdesc">Every note, and every link between them. Drag the nodes; tap one to open it. New captures drop in live.</p>
+  </section>
+  <section class="view" id="askv">
+    <div class="chips" id="suggest"></div>
+    <div id="answerBox"><p class="empty">Ask by meaning, not keywords. Try one of the questions above.<br>Uni reads your whole vault and answers with sources.</p></div>
+  </section>
+</main>
+<button class="fab" id="fab">+ Capture</button>
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet"><div class="grab"></div><div id="sheetBody"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ---------- synthetic data (nothing here is real) ----------
+const FOLDERS={
+ "Captures":"Your raw words: journal, voice memos, dreams. Kept exactly as you said them. Never rewritten.",
+ "Meetings":"Transcripts and summaries that come in from your call recorder.",
+ "People":"Living pages about people, written by you and Uni together.",
+ "Projects":"What you're working on. Uni keeps these current as captures and meetings arrive.",
+ "Uni":"How the system runs: Now, Commitments, runbooks, logs. Open, so you can change how Uni behaves.",
+ "Archive":"Superseded notes. Nothing is deleted, only moved here."
+};
+const C={ // concept lexicon, a stand-in for embeddings
+ garden:["garden","tomato","tomatoes","plant","plants","bed","harvest","blight","soil","grow","leaves","seeds","compost","veg"],
+ worry:["worried","worry","anxious","anxiety","stress","stressed","afraid","fear","nervous","concern","concerned","scared","dread","tight","stretched","overwhelmed","badly"],
+ sleep:["sleep","slept","tired","insomnia","rest","night","woke","awake"],
+ music:["choir","music","sing","singing","rehearse","rehearsal","rehearsals","song","songs","concert","harmony"],
+ community:["community","neighbors","neighborhood","neighbours","library","lend","share","sharing","people","permit","permits","volunteers","group"],
+ tools:["tool","tools","drill","saw","ladder","lend","library","borrow"],
+ money:["money","budget","cost","costs","pay","rent","cash","expensive","grant","funding","afford"],
+ idea:["idea","ideas","could","maybe","what if","start","plan","connect"],
+ help:["help","ask","support","who","advice","volunteer","volunteers"],
+ relief:["relief","relieved","glad","happy","better","joy","harvest","good"],
+ dream:["dream","dreamt","dreamed","dreaming"],
+ letters:["letter","letters","write","email","reply","unsent","message","call"],
+ overload:["too","many","projects","stretched","busy","overwhelmed","overload","much"]
+};
+const SEED=[
+ {p:"Captures/2026/09-02/07-14",t:"Voice memo, early morning",tags:["capture","voice"],d:"2026-09-02 07:14",
+  b:"Woke up anxious about the tomatoes again. There's blight on the lower leaves of the raised bed. If it doesn't make it I honestly don't know if I'll bother with a garden next year.",
+  g:"On Sep 2 you woke up anxious about blight on the tomatoes and wondered whether to garden at all next year",l:["Projects/Backyard garden"]},
+ {p:"Captures/2026/09-05/06-40",t:"Dream: the library of letters",tags:["capture","dream-log"],d:"2026-09-05 06:40",
+  b:"Dreamt of a library where every book was a letter I never sent. Ana was the librarian and kept handing me stamps.",
+  g:"a dream about a library of unsent letters, with Ana as the librarian",l:["People/Ana Park"]},
+ {p:"Captures/2026/09-09/21-02",t:"Idea: choir in the garden",tags:["capture","text"],d:"2026-09-09 21:02",
+  b:"What if the choir rehearsed in the community garden on Sunday mornings? Outdoor acoustics, neighbors wander by. Ask Jordan about permits.",
+  g:"an idea to hold choir rehearsals in the community garden on Sundays, asking Jordan about permits",l:["Projects/Neighborhood choir","Projects/Backyard garden","People/Jordan Lee"]},
+ {p:"Captures/2026/09-14/23-51",t:"Late night",tags:["capture","voice"],d:"2026-09-14 23:51",
+  b:"Slept badly again. Money is tight this month and I feel stretched across too many projects. Choir, tool library, garden. Something has to give.",
+  g:"on Sep 14 you slept badly, money felt tight and you felt stretched across choir, tool library and garden",l:["Projects/Neighborhood choir","Projects/Tool library","Projects/Backyard garden"]},
+ {p:"Captures/2026/09-18/17-30",t:"Walk with Priya",tags:["capture","text"],d:"2026-09-18 17:30",
+  b:"Walked with Priya by the creek. She said the best way to start the tool library is to just lend my own drill and see who shows up. Low stakes, start small.",
+  g:"Priya's advice: start the tool library by lending your own drill",l:["People/Priya Shah","Projects/Tool library"]},
+ {p:"Captures/2026/09-21/12-05",t:"Harvest!",tags:["capture","voice"],d:"2026-09-21 12:05",
+  b:"Harvest! Four kilos of tomatoes. The blight stopped once I cut off the lower leaves. Such relief. Giving a bag to the Parks next door.",
+  g:"on Sep 21 the blight stopped after you cut the lower leaves, and you harvested four kilos, with relief",l:["Projects/Backyard garden","People/Ana Park"]},
+ {p:"Meetings/2026/09-10/1900-choir-planning",t:"Choir planning",tags:["meeting","transcript"],d:"2026-09-10 19:00",
+  b:"With Jordan Lee and Ana Park.\n\n• Fall concert set for Nov 16 at the library hall.\n• Jordan will check the city permit for outdoor Sunday rehearsals.\n• Ana needs a budget for sheet music (about $180).\n• Sam to draft a volunteer sign-up sheet.",
+  g:"the choir planning meeting set the fall concert for Nov 16; Jordan is checking the outdoor permit",l:["People/Jordan Lee","People/Ana Park","Projects/Neighborhood choir"]},
+ {p:"Meetings/2026/09-17/1030-tool-library-kickoff",t:"Tool library kickoff",tags:["meeting","transcript"],d:"2026-09-17 10:30",
+  b:"With Priya Shah.\n\n• Start with a shelf in Sam's garage, 15 tools.\n• Priya can help with a simple lending log and has volunteers from her building.\n• Open-day target: first Saturday of October.\n• Question: insurance. Priya will ask the neighborhood association.",
+  g:"at the tool library kickoff, Priya offered a lending log and volunteers from her building",l:["People/Priya Shah","Projects/Tool library"]},
+ {p:"People/Jordan Lee",t:"Jordan Lee",tags:["person"],d:"updated 2026-09-22",
+  b:"Choir co-lead, tenor. Knows the city parks office. Reliable with logistics; prefers texts to email.\n\nLast seen: choir planning, Sep 10.",
+  g:"Jordan knows the city parks office and handles logistics",l:["Projects/Neighborhood choir"]},
+ {p:"People/Priya Shah",t:"Priya Shah",tags:["person"],d:"updated 2026-09-18",
+  b:"Neighbor, two streets over. Organizer at heart; runs a repair café. Has a pool of volunteers in her building. Good at 'start small' advice.",
+  g:"Priya runs a repair café and has a pool of volunteers",l:["Projects/Tool library"]},
+ {p:"People/Ana Park",t:"Ana Park",tags:["person"],d:"updated 2026-09-21",
+  b:"Next-door neighbor, alto in the choir, keeps the sheet music. Loves tomatoes.",
+  g:"Ana is the choir's alto and keeps the sheet music",l:["Projects/Neighborhood choir"]},
+ {p:"Projects/Neighborhood choir",t:"Neighborhood choir",tags:["project"],d:"updated 2026-09-22",
+  b:"Status: active. Fall concert Nov 16.\n\nOpen: outdoor rehearsal permit (Jordan), sheet music budget $180 (Ana), volunteer sign-up sheet (you).",
+  g:"the choir's open items are the permit, a $180 sheet music budget, and your volunteer sheet",l:["People/Jordan Lee","People/Ana Park"]},
+ {p:"Projects/Tool library",t:"Tool library",tags:["project"],d:"updated 2026-09-18",
+  b:"Status: starting. Shelf in the garage, 15 tools. Open day: first Saturday of October.\n\nOpen: insurance question, lending log (Priya).",
+  g:"the tool library opens the first Saturday of October; insurance is still open",l:["People/Priya Shah"]},
+ {p:"Projects/Backyard garden",t:"Backyard garden",tags:["project"],d:"updated 2026-09-21",
+  b:"Raised bed, tomatoes and beans. Blight scare in early September, resolved by pruning lower leaves. Harvest 4 kg on Sep 21.",
+  g:"the garden had a blight scare in early September that pruning resolved",l:[]},
+ {p:"Uni/Now",t:"Now",tags:["uni"],d:"updated today",
+  b:"Current focus: tool library open day, choir concert prep.\nIngest: meetings every 4h, captures hourly. Semantic search: on (local model).",
+  g:"current focus is the tool library open day and choir prep",l:["Uni/Commitments","Projects/Tool library","Projects/Neighborhood choir"]},
+ {p:"Uni/Commitments",t:"Commitments",tags:["uni"],d:"updated today",
+  b:"Open:\n• Volunteer sign-up sheet for choir (said Sep 10), due Sep 30\n• Lend the drill, post on the street chat (said Sep 18), due Oct 3",
+  g:"you committed to a choir volunteer sheet by Sep 30",l:["Projects/Neighborhood choir","Projects/Tool library"]},
+ {p:"Uni/Runbooks/Morning brief",t:"Morning brief",tags:["uni","runbook"],d:"updated 2026-09-20",
+  b:"Every day at 7:30: commitments due within 3 days, what arrived overnight, anything stale. Ten lines max. Silent if nothing changed.",g:"the morning brief runs at 7:30",l:["Uni/Commitments"]},
+ {p:"Archive/2024/Task system v1",t:"Task system v1",tags:["archived"],d:"2024-03-11",
+  b:"An old attempt at a task list. Superseded by Uni/Commitments.",g:"an old task system",l:["Uni/Commitments"]},
+ {p:"Archive/2025/Reading list",t:"Reading list (2025)",tags:["archived"],d:"2025-01-04",
+  b:"Braiding Sweetgrass · The Art of Gathering · Pattern Language",g:"an old reading list",l:[]}
+];
+const QUESTIONS=["What was I worried about with the garden?","Who could help with the tool library?","Anything about sleep or stress lately?","Ideas that connect music and the garden","What did I dream about?"];
+const STOP=new Set("a an the i me my was were is are about with and or of to in on at for what who any anything that lately did do does could be it this from have has".split(" "));
+
+let notes=JSON.parse(localStorage.getItem("uv_notes")||"null")||SEED.map(n=>({...n}));
+let folder="Captures";
+const $=s=>document.querySelector(s);
+const save=()=>localStorage.setItem("uv_notes",JSON.stringify(notes));
+const byPath=p=>notes.find(n=>n.p===p);
+const words=s=>s.toLowerCase().replace(/[^a-z0-9' ]/g," ").split(/\s+/).filter(Boolean);
+function vec(text){const w=words(text),v={};for(const k in C){let s=0;for(const x of C[k]){if(x.includes(" ")){if(text.toLowerCase().includes(x))s+=1}else if(w.includes(x))s+=1}if(s)v[k]=Math.min(1,.45+s*.25)}return v}
+function cos(a,b){let d=0,na=0,nb=0;for(const k in a){na+=a[k]*a[k];if(b[k])d+=a[k]*b[k]}for(const k in b)nb+=b[k]*b[k];return na&&nb?d/Math.sqrt(na*nb):0}
+const kind=n=>n.p.split("/")[0];
+const toast=m=>{const t=$("#toast");t.textContent=m;t.classList.add("on");clearTimeout(t._);t._=setTimeout(()=>t.classList.remove("on"),2600)};
+function backlinks(p){return notes.filter(n=>n.l.includes(p))}
+
+// ---------- browse ----------
+function renderFolders(){$("#folders").innerHTML=Object.keys(FOLDERS).map(f=>`<button class="fold ${f===folder?"on":""}" data-f="${f}"><b>${f}/</b><span>${notes.filter(n=>kind(n)===f).length} notes</span></button>`).join("");
+ $("#fdesc").textContent=FOLDERS[folder]}
+function card(n,extra=""){return `<div class="note ${n._new?"new":""}" data-p="${n.p}">${extra}<div class="p">${n.p}</div><div class="t">${n.t}</div><div class="x">${n.b}</div><div class="tags">${n.tags.map(t=>`<span class="tag ${t}">${t}</span>`).join("")}</div></div>`}
+function renderList(){const l=notes.filter(n=>kind(n)===folder).sort((a,b)=>b.d.localeCompare(a.d));$("#list").innerHTML=l.map(n=>card(n)).join("")||`<p class="empty">Empty</p>`}
+$("#folders").onclick=e=>{const b=e.target.closest(".fold");if(!b)return;folder=b.dataset.f;renderFolders();renderList()};
+document.addEventListener("click",e=>{const n=e.target.closest("[data-p]");if(n)openNote(n.dataset.p)});
+
+// ---------- sheet ----------
+function openSheet(html){$("#sheetBody").innerHTML=html;$("#sheet").classList.add("on");$("#scrim").classList.add("on");$("#sheet").scrollTop=0}
+function closeSheet(){$("#sheet").classList.remove("on");$("#scrim").classList.remove("on")}
+$("#scrim").onclick=closeSheet;
+function openNote(p){const n=byPath(p);if(!n)return;const bl=backlinks(p);
+ const rel=notes.filter(x=>x!==n).map(x=>({x,s:cos(vec(n.b+" "+n.t),vec(x.b+" "+x.t))})).filter(o=>o.s>.35&&!n.l.includes(o.x.p)&&!bl.includes(o.x)).sort((a,b)=>b.s-a.s).slice(0,3);
+ openSheet(`<div class="meta">${n.p} · ${n.d}</div><h2>${n.t}</h2><div class="tags">${n.tags.map(t=>`<span class="tag ${t}">${t}</span>`).join("")}</div>
+ ${kind(n)==="Captures"?`<span class="sacred">◆ capture: stored byte-for-byte, never rewritten</span>`:""}
+ <div class="body">${n.b}</div>
+ <h4>Links out</h4>${n.l.map(x=>`<span class="chip" data-p="${x}">→ ${x}</span>`).join("")||'<span class="meta">none</span>'}
+ <h4>Linked from</h4>${bl.map(x=>`<span class="chip" data-p="${x.p}">← ${x.t}</span>`).join("")||'<span class="meta">none yet</span>'}
+ ${rel.length?`<h4>Similar in meaning, not yet linked</h4>${rel.map(o=>`<span class="chip" data-p="${o.x.p}">≈ ${o.x.t} <span class="meta">${Math.round(o.s*100)}%</span></span>`).join("")}`:""}`)}
+
+// ---------- capture flow ----------
+const SAMPLES=["Jordan says the park permit came through! Need to buy 12 folding chairs before the concert.","Can't stop thinking about money. Worried the tool library insurance will cost more than we can afford.","Dreamt the garden was singing. Every tomato had a different note."];
+$("#fab").onclick=()=>{openSheet(`<h2>New capture</h2><p class="meta">Type or pick one. In the real app this could be voice.</p>
+ <div class="cap"><textarea id="capText" placeholder="What's on your mind?">${SAMPLES[0]}</textarea></div>
+ <div class="samples">${SAMPLES.map((s,i)=>`<span class="chip" data-s="${i}">${["permit news","money worry","a dream"][i]}</span>`).join("")}</div>
+ <button class="btn" id="capGo" style="width:100%">Save capture</button><div class="pipe" id="pipe"></div>`);
+ document.querySelectorAll("[data-s]").forEach(c=>c.onclick=()=>$("#capText").value=SAMPLES[c.dataset.s]);
+ $("#capGo").onclick=runCapture};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function runCapture(){const text=$("#capText").value.trim();if(!text)return;$("#capGo").disabled=true;$("#capGo").textContent="Uni is filing it…";
+ const now=new Date(),pad=x=>String(x).padStart(2,"0");
+ const path=`Captures/${now.getFullYear()}/${pad(now.getMonth()+1)}-${pad(now.getDate())}/${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+ const lw=text.toLowerCase();const links=[];
+ [["jordan","People/Jordan Lee"],["priya","People/Priya Shah"],["ana","People/Ana Park"],["choir","Projects/Neighborhood choir"],["concert","Projects/Neighborhood choir"],["sing","Projects/Neighborhood choir"],["tool","Projects/Tool library"],["garden","Projects/Backyard garden"],["tomato","Projects/Backyard garden"]].forEach(([k,v])=>{if(lw.includes(k)&&!links.includes(v))links.push(v)});
+ const isDream=/dream/.test(lw);const tags=["capture","text"].concat(isDream?["dream-log"]:[]);
+ const commit=text.match(/(need to|i'll|i will|have to|must)\s+([^.!?]+)/i);
+ const v=vec(text);const top=Object.entries(v).sort((a,b)=>b[1]-a[1]).map(x=>x[0]).slice(0,4);
+ const steps=[
+  ["Saved to "+path,"Your exact words, with the exact time. This file is never edited."],
+  ["Tagged: "+tags.join(", "),"Tags carry the kind of note, paths carry its place."],
+  [links.length?"Linked to "+links.length+" note"+(links.length>1?"s":""):"No links found",links.map(x=>x.split("/")[1]).join(" · ")||"It still stands on its own and is searchable."],
+  [commit?"Commitment spotted":"No commitment in this one",commit?`"${commit[2].trim()}" → Uni/Commitments (you'll confirm in the morning brief)`:"Uni only tracks what you say you'll do."],
+  ["Embedded for meaning search","Local model, nothing leaves your machine. Themes: "+(top.join(", ")||"general")]];
+ $("#pipe").innerHTML=steps.map((s,i)=>`<div class="step" id="st${i}"><div class="dot">${i+1}</div><div><b>${s[0]}</b><small>${s[1]}</small></div></div>`).join("");
+ for(let i=0;i<steps.length;i++){$("#st"+i).classList.add("on");await sleep(650);$("#st"+i).classList.add("done");$("#st"+i+" .dot").textContent="✓"}
+ notes.forEach(n=>delete n._new);
+ const n={p:path,t:text.split(/[.!?]/)[0].slice(0,48),tags,d:`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`,b:text,g:`just now you captured: "${text.slice(0,90)}"`,l:links,_new:true};
+ notes.push(n);
+ if(commit){const cm=byPath("Uni/Commitments");cm.b+=`\n• ${commit[2].trim()[0].toUpperCase()+commit[2].trim().slice(1)} (said today), needs a date`;if(!cm.l.includes(path))cm.l.push(path)}
+ save();folder="Captures";renderFolders();renderList();addNode(n);
+ $("#capGo").textContent="Done. Try asking about it ↑";
+ await sleep(900);closeSheet();toast("Captured, linked and searchable. Ask the vault about it.")}
+
+// ---------- ask ----------
+$("#suggest").innerHTML=QUESTIONS.map(q=>`<span class="chip" data-q="${q}">${q}</span>`).join("");
+$("#suggest").onclick=e=>{const c=e.target.closest("[data-q]");if(c){$("#q").value=c.dataset.q;ask(c.dataset.q)}};
+$("#askForm").onsubmit=e=>{e.preventDefault();const q=$("#q").value.trim();if(q)ask(q)};
+let askRun=0;
+async function ask(q){const run=++askRun;show("askv");$("#q").blur();
+ const qv=vec(q);const qw=words(q).filter(w=>!STOP.has(w));
+ const kw=notes.filter(n=>qw.some(w=>words(n.b+" "+n.t).includes(w)));
+ let res=notes.filter(n=>kind(n)!=="Archive").map(n=>{let s=cos(qv,vec(n.b+" "+n.t));if(kind(n)==="Captures"&&s>0)s+=.04;if(n._new&&s>0)s+=.05;return{n,s:Math.min(.99,s)}}).filter(o=>o.s>.3).sort((a,b)=>b.s-a.s).slice(0,4);
+ $("#answerBox").innerHTML=`<div class="answer"><div class="who">UNI · reading ${notes.length} notes</div><div id="ans" class="cursor"></div></div>
+ <div class="cmp"><div><span class="meta">Keyword search</span><b>${kw.length}</b>notes contain your exact words</div><div><span class="meta">Meaning search</span><b>${res.length}</b>notes are about what you asked</div></div>
+ <h4 style="font-size:12px;letter-spacing:.12em;color:var(--mute);text-transform:uppercase;margin:16px 0 4px">Sources</h4>
+ ${res.map((o,i)=>card(o.n,`<span class="score">[${i+1}] ${Math.round(o.s*100)}% match</span>`)).join("")}`;
+ document.querySelectorAll("#answerBox .note").forEach((el,i)=>el.insertAdjacentHTML("beforeend",`<div class="bar"><i style="width:${Math.round(res[i].s*100)}%"></i></div>`));
+ let text;
+ if(!res.length)text="I couldn't find anything about that yet. Capture a thought about it and ask again: it'll turn up here.";
+ else{const g=res.map((o,i)=>o.n.g+` [${i+1}]`);
+  text=(res.length>1?"Here's the thread I see. ":"One note speaks to this. ")+g[0].charAt(0).toUpperCase()+g[0].slice(1)+"."+(g[1]?" Related: "+g[1]+".":"")+(g[2]?" Also, "+g[2]+".":"");
+  if(qv.worry&&qv.garden)text+=" The good news: it resolved. The later harvest note reads as relief.";
+  if(kw.length<res.length)text+=` (Keyword search alone would have found ${kw.length}.)`}
+ const el=$("#ans");for(let i=0;i<=text.length;i+=3){if(run!==askRun)return;el.innerHTML=text.slice(0,i).replace(/\[(\d)\]/g,'<span class="cite" data-c="$1">$1</span>');await sleep(12)}
+ el.classList.remove("cursor");el.innerHTML=text.replace(/\[(\d)\]/g,(m,d)=>`<span class="cite" data-p="${res[d-1].n.p}">${d}</span>`)}
+
+// ---------- tabs ----------
+function show(v){document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on",t.dataset.v===v));document.querySelectorAll(".view").forEach(s=>s.classList.toggle("on",s.id===v));if(v==="map")sizeCanvas()}
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>show(t.dataset.v));
+
+// ---------- map (tiny force layout) ----------
+const cv=$("#cv"),ctx=cv.getContext("2d");let W=0,H=0,dpr=devicePixelRatio||1;
+const COL={Captures:"#f0a35e",Meetings:"#8fc7b1",People:"#b9a3f0",Projects:"#e8b98f",Uni:"#8a8f99",Archive:"#4b4540"};
+let nodes=[],drag=null,down=null;
+function addNode(n){nodes.push({n,x:(W||300)/2+(Math.random()-.5)*60,y:(H||400)/2+(Math.random()-.5)*60,vx:0,vy:0,pulse:n._new?1:0})}
+notes.forEach(addNode);
+function sizeCanvas(){const r=cv.getBoundingClientRect();W=r.width;H=r.height;cv.width=W*dpr;cv.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)}
+function tick(){if(!$("#map").classList.contains("on")){requestAnimationFrame(tick);return}
+ const idx=new Map(nodes.map(o=>[o.n.p,o]));
+ for(const a of nodes){a.vx+=(W/2-a.x)*.0009;a.vy+=(H/2-a.y)*.0009;for(const b of nodes){if(a===b)continue;const dx=a.x-b.x,dy=a.y-b.y,d2=dx*dx+dy*dy+.1;if(d2<40000){const f=500/d2;a.vx+=dx*f*.05;a.vy+=dy*f*.05}}}
+ for(const a of nodes)for(const p of a.n.l){const b=idx.get(p);if(!b)continue;const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1,f=(d-80)*.004;a.vx+=dx/d*f*d*.02;a.vy+=dy/d*f*d*.02;b.vx-=dx/d*f*d*.02;b.vy-=dy/d*f*d*.02}
+ for(const a of nodes){if(a===drag)continue;a.vx*=.82;a.vy*=.82;a.x=Math.max(14,Math.min(W-14,a.x+a.vx));a.y=Math.max(14,Math.min(H-14,a.y+a.vy))}
+ ctx.clearRect(0,0,W,H);ctx.lineWidth=1;
+ for(const a of nodes)for(const p of a.n.l){const b=idx.get(p);if(!b)continue;ctx.strokeStyle=a.pulse>0?`rgba(240,163,94,${.3+a.pulse*.6})`:"rgba(168,155,143,.22)";ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()}
+ ctx.font="11px system-ui";
+ for(const a of nodes){const k=kind(a.n),r=k==="Projects"||k==="People"?8:5.5;if(a.pulse>0){ctx.fillStyle=`rgba(240,163,94,${a.pulse*.35})`;ctx.beginPath();ctx.arc(a.x,a.y,r+14*a.pulse,0,7);ctx.fill();a.pulse-=.004}
+  ctx.fillStyle=COL[k];ctx.beginPath();ctx.arc(a.x,a.y,r,0,7);ctx.fill();
+  if(k!=="Captures"&&k!=="Meetings"||a.pulse>0){ctx.fillStyle="#d8ccc0";ctx.fillText(a.n.t.slice(0,22),a.x+r+4,a.y+4)}}
+ requestAnimationFrame(tick)}
+requestAnimationFrame(tick);
+const pt=e=>{const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}};
+cv.addEventListener("pointerdown",e=>{const p=pt(e);drag=nodes.reduce((m,o)=>{const d=Math.hypot(o.x-p.x,o.y-p.y);return d<22&&(!m||d<m.d)?{o,d}:m},null)?.o||null;down={...p,t:Date.now()};cv.setPointerCapture(e.pointerId)});
+cv.addEventListener("pointermove",e=>{if(drag){const p=pt(e);drag.x=p.x;drag.y=p.y}});
+cv.addEventListener("pointerup",e=>{const p=pt(e);if(drag&&Math.hypot(p.x-down.x,p.y-down.y)<6)openNote(drag.n.p);drag=null});
+addEventListener("resize",()=>{if($("#map").classList.contains("on"))sizeCanvas()});
+
+renderFolders();renderList();
+</script>
+</body>
+</html>
